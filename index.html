@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurix — Jewelry CAD Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/aurix.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">AURIX<small>Jewelry CAD Studio</small></div>
+    <div class="spacer"></div>
+    <button class="btn" id="btn-store" aria-pressed="false">Storefront view</button>
+    <button class="btn" id="btn-spec">Spec sheet</button>
+    <button class="btn" id="btn-photo">Studio photo</button>
+    <button class="btn primary" id="btn-stl">Export STL</button>
+  </header>
+
+  <div class="main">
+    <aside class="controls" aria-label="Design controls">
+      <section class="grp">
+        <h3>AI design assistant</h3>
+        <textarea id="ai-prompt" placeholder='e.g. "2.5ct emerald cut, platinum, hidden halo, knife edge band, size 7"'></textarea>
+        <div class="row" style="margin-bottom:0"><button class="btn primary" id="ai-go">Design it</button>
+          <div class="chips" id="ai-examples"></div></div>
+        <div class="ai-note" id="ai-note" role="status"></div>
+        <div class="vars" id="ai-vars"></div>
+        <p class="hint">Rule-based interpreter that runs in your browser — no external AI service.</p>
+      </section>
+
+      <section class="grp">
+        <h3>Center stone</h3>
+        <div class="row"><label for="stone">Stone</label><select id="stone"></select></div>
+        <div class="swatches" id="stone-sw" style="margin:0 0 12px"></div>
+        <div class="shapes" id="shapes"></div>
+        <div class="row"><label for="carat">Carat</label><input type="range" id="carat" min="0.3" max="5" step="0.05"><output id="carat-o"></output></div>
+        <div class="row"><label for="rot">Rotate stone</label><input type="range" id="rot" min="-90" max="90" step="5"><output id="rot-o"></output></div>
+        <div class="chips" style="margin-bottom:6px"><button class="chip" type="button" id="rot-ns">North-south</button><button class="chip" type="button" id="rot-ew">East-west (90°)</button></div>
+        <div class="row" id="color-row"><label for="color">Color</label><select id="color"></select></div>
+        <div class="row"><label for="clarity">Clarity</label><select id="clarity"></select></div>
+      </section>
+
+      <section class="grp">
+        <h3>Setting</h3>
+        <div class="chips" id="heads" role="group" aria-label="Head style"></div>
+        <div class="row"><label for="prong">Prong Ø</label><input type="range" id="prong" min="0.4" max="1.6" step="0.05"><output id="prong-o"></output></div>
+        <div class="row"><label for="halo">Halo</label><select id="halo"><option value="none">None</option><option value="hidden">Hidden halo</option><option value="classic">Classic pavé halo</option></select></div>
+        <div class="row"><label for="accents">Shank pavé</label><select id="accents"><option value="none">None</option><option value="half">Half way</option><option value="full">Full eternity</option></select></div>
+      </section>
+
+      <section class="grp">
+        <h3>Band</h3>
+        <div class="chips" id="profiles" role="group" aria-label="Band profile"></div>
+        <div class="row"><label for="thick">Thickness</label><input type="range" id="thick" min="0.6" max="3" step="0.1"><output id="thick-o"></output></div>
+        <div class="row"><label for="width">Width</label><input type="range" id="width" min="1.4" max="8" step="0.1"><output id="width-o"></output></div>
+        <div class="row"><label for="size">US size</label><input type="range" id="size" min="3" max="13" step="0.5"><output id="size-o"></output></div>
+        <div class="row"><label for="engrave">Engraving</label><input type="text" id="engrave" maxlength="24" placeholder="Inside band text"></div>
+      </section>
+
+      <section class="grp">
+        <h3>Metal</h3>
+        <div class="swatches" id="metals"></div>
+        <div class="metal-name" id="metal-name"></div>
+      </section>
+    </aside>
+
+    <main class="stage">
+      <div id="viewport"></div>
+
+      <div class="hud feas" id="feas" aria-live="polite"></div>
+
+      <div class="hud quote">
+        <div class="sub">Estimated retail price</div>
+        <div class="price" id="price">—</div>
+        <table style="margin-top:8px">
+          <tr><td>Metal weight</td><td id="m-weight">—</td></tr>
+          <tr><td>Center stone</td><td id="m-stone">—</td></tr>
+          <tr><td>Ring size</td><td id="m-size">—</td></tr>
+        </table>
+        <details><summary>Cost breakdown (wholesale)</summary><table id="breakdown"></table></details>
+        <div class="store-cta"><button class="btn primary" id="btn-bag">Add to bag</button><button class="btn" id="btn-share">Copy link</button></div>
+      </div>
+
+      <div class="view-tools"><span>Drag to rotate · scroll to zoom</span><button class="btn" id="btn-focus" aria-pressed="false">Focus stone</button><button class="btn" id="btn-rotate" aria-pressed="true">Auto-rotate: on</button></div>
+    </main>
+  </div>
+</div>
+
+<div class="modal" id="spec-modal" role="dialog" aria-modal="true" aria-label="Specification sheet">
+  <div class="bar-actions"><button class="btn primary" id="spec-print">Print / save PDF</button><button class="btn" id="spec-close">Close</button></div>
+  <div id="spec-host"></div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>
+<script src="js/gemstones.js"></script>
+<script src="js/pricing-engine.js"></script>
+<script src="js/stl-exporter.js"></script>
+<script src="js/cad-engine.js"></script>
+<script src="js/ai-designer.js"></script>
+<script src="js/spec-sheet.js"></script>
+<script src="js/ui-controller.js"></script>
+</body>
+</html>
