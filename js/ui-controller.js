@@ -160,5 +160,73 @@
   if (p.has('rotation')) init.stoneRotation = Math.min(90, Math.max(-90, parseFloat(p.get('rotation')) || 0));
   if (p.get('mode') === 'store') $('btn-store').click();
   applyConfig(init);
+  /* ----- accounts + saved designs (Supabase) ----- */
+  let me = null, currentDesignId = null, signingUp = false;
+  const esc = (s) => String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const openModal = (id) => $(id).classList.add('open'), closeModal = (id) => $(id).classList.remove('open');
+  const setAuthMode = (up) => {
+    signingUp = up;
+    $('auth-title').textContent = $('auth-submit').textContent = up ? 'Create account' : 'Sign in';
+    $('auth-switch').textContent = up ? 'I have an account' : 'Create account';
+    $('auth-pass').autocomplete = up ? 'new-password' : 'current-password';
+    $('auth-err').textContent = '';
+  };
+  AurixCloud.onAuth((u) => {
+    me = u; currentDesignId = null;
+    $('who').textContent = u ? u.email : '';
+    $('btn-account').textContent = u ? 'Sign out' : 'Sign in';
+    $('btn-designs').hidden = !u;
+  });
+  AurixCloud.user().then((u) => { me = u; });
+  $('btn-account').addEventListener('click', () => {
+    if (me) { AurixCloud.signOut().then(() => toast('Signed out')); return; }
+    setAuthMode(false); openModal('auth-modal'); $('auth-email').focus();
+  });
+  $('auth-switch').addEventListener('click', () => setAuthMode(!signingUp));
+  $('auth-close').addEventListener('click', () => closeModal('auth-modal'));
+  $('auth-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = $('auth-email').value.trim(), pass = $('auth-pass').value;
+    try {
+      if (signingUp) {
+        const signedIn = await AurixCloud.signUp(email, pass);
+        toast(signedIn ? 'Account created' : 'Check your email to confirm your account');
+      } else { await AurixCloud.signIn(email, pass); toast('Signed in'); }
+      closeModal('auth-modal'); $('auth-pass').value = '';
+    } catch (err) { $('auth-err').textContent = err.message; }
+  });
+  $('btn-save').addEventListener('click', async () => {
+    if (!me) { toast('Sign in to save designs'); setAuthMode(false); openModal('auth-modal'); return; }
+    const c = cfg(), price = PricingEngine.calculateCostBreakdown(c, studio.metrics).retail;
+    const name = currentDesignId ? undefined : (prompt('Name this design', (GemstoneLibrary.SHAPES[c.gemShape].label + ' ' + c.carat + 'ct ring')) || '').trim();
+    if (name === '') return;
+    try {
+      currentDesignId = await AurixCloud.saveDesign(name || 'Untitled ring', c, price, currentDesignId);
+      toast('Design saved');
+    } catch (err) { toast('Couldn’t save: ' + err.message); }
+  });
+  async function showDesigns() {
+    const list = $('designs-list'); list.textContent = 'Loading…'; openModal('designs-modal');
+    try {
+      const rows = await AurixCloud.listDesigns();
+      list.innerHTML = rows.length ? '' : '<p class="hint">No saved designs yet.</p>';
+      rows.forEach((r) => {
+        const item = document.createElement('div'); item.className = 'design-item';
+        item.innerHTML = '<div class="meta"><b>' + esc(r.name) + '</b><span>' + esc(PricingEngine.fmt(r.retail_price || 0)) + ' · ' + new Date(r.updated_at).toLocaleDateString() + '</span></div>' +
+          '<button class="btn" data-act="open">Open</button><button class="btn" data-act="del">Delete</button>';
+        item.querySelector('[data-act=open]').addEventListener('click', () => {
+          applyConfig({ ...CADStudio.DEFAULTS, ...r.config }); currentDesignId = r.id; closeModal('designs-modal'); toast('Opened ' + r.name);
+        });
+        item.querySelector('[data-act=del]').addEventListener('click', async () => {
+          try { await AurixCloud.deleteDesign(r.id); if (currentDesignId === r.id) currentDesignId = null; item.remove(); }
+          catch (err) { toast('Couldn’t delete: ' + err.message); }
+        });
+        list.appendChild(item);
+      });
+    } catch (err) { list.textContent = 'Couldn’t load designs: ' + err.message; }
+  }
+  $('btn-designs').addEventListener('click', showDesigns);
+  $('designs-close').addEventListener('click', () => closeModal('designs-modal'));
+
   window.aurix = studio; // handy for debugging in the console
 })();
