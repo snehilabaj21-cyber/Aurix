@@ -226,6 +226,8 @@ const AurixMarketplace = (() => {
     window.addEventListener('popstate', () => show(location.hash === '#marketplace' ? 'market' : 'studio', false));
     $('listing-modal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeListing(); });
     $('publish-modal').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
+    $('l-x').addEventListener('click', closeListing);
+    $('pub-x').addEventListener('click', () => $('publish-modal').classList.remove('open'));
     $('l-close').addEventListener('click', closeListing);
     $('l-like').addEventListener('click', () => { const card = [...document.querySelectorAll('.m-card')].find((el) => el.querySelector('[data-thumb="' + current.id + '"]')); if (card) toggleLike(current, card.querySelector('.m-like')); });
     $('l-buy').addEventListener('click', () => ctx.toast(current.price === 0 ? 'Free designs open straight in the studio' : 'Checkout isn’t connected yet — payments are coming soon'));

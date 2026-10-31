@@ -181,3 +181,7 @@ body[data-view=market] #btn-stl, body[data-view=market] #btn-stl-true, body[data
 
 .back-market { display: none; }
 body.from-market[data-view=studio] .back-market { display: inline-block; }
+.card.listing, #publish-form { position: relative; }
+.x-close { position: absolute; top: 10px; right: 12px; z-index: 1; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font-size: 22px; line-height: 1; cursor: pointer; display: grid; place-items: center; padding: 0 0 2px; }
+.x-close:hover { border-color: var(--gold); color: var(--gold-2); }
+.x-close:focus-visible { outline: 2px solid var(--gold-2); outline-offset: 2px; }
