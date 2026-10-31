@@ -13,6 +13,10 @@
   <header class="top">
     <div class="brand">AURIX<small>Jewelry CAD Studio</small></div>
     <div class="spacer"></div>
+    <span class="who" id="who"></span>
+    <button class="btn" id="btn-designs" hidden>My designs</button>
+    <button class="btn" id="btn-save">Save design</button>
+    <button class="btn" id="btn-account">Sign in</button>
     <button class="btn" id="btn-store" aria-pressed="false">Storefront view</button>
     <button class="btn" id="btn-spec">Spec sheet</button>
     <button class="btn" id="btn-photo">Studio photo</button>
@@ -93,14 +97,29 @@
   <div class="bar-actions"><button class="btn primary" id="spec-print">Print / save PDF</button><button class="btn" id="spec-close">Close</button></div>
   <div id="spec-host"></div>
 </div>
+<div class="modal dlg" id="auth-modal" role="dialog" aria-modal="true" aria-label="Account">
+  <form class="card" id="auth-form">
+    <h3 id="auth-title">Sign in</h3>
+    <div class="row"><label for="auth-email">Email</label><input type="email" id="auth-email" autocomplete="email" required></div>
+    <div class="row"><label for="auth-pass">Password</label><input type="password" id="auth-pass" autocomplete="current-password" minlength="8" required></div>
+    <div class="auth-err" id="auth-err" role="alert"></div>
+    <div class="row" style="margin:12px 0 0"><button class="btn primary" type="submit" id="auth-submit">Sign in</button>
+      <button class="btn" type="button" id="auth-switch">Create account</button><button class="btn" type="button" id="auth-close">Cancel</button></div>
+  </form>
+</div>
+<div class="modal dlg" id="designs-modal" role="dialog" aria-modal="true" aria-label="My designs">
+  <div class="card wide"><h3>My designs</h3><div id="designs-list"></div>
+    <div class="row" style="margin:12px 0 0"><button class="btn" type="button" id="designs-close">Close</button></div></div>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script type="module">
   // three.min.js is deprecated (removed in r160), so load the ES module build and
   // expose it as a global for the classic scripts below, which run in order after it.
   import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js';
   window.THREE = THREE;
-  const scripts = ['gemstones', 'pricing-engine', 'stl-exporter', 'cad-engine', 'ai-designer', 'spec-sheet', 'ui-controller'];
+  const scripts = ['gemstones', 'pricing-engine', 'stl-exporter', 'cad-engine', 'ai-designer', 'spec-sheet', 'cloud', 'ui-controller'];
   for (const name of scripts) {
     await new Promise((resolve, reject) => {
       const s = document.createElement('script');
