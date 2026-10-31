@@ -95,13 +95,21 @@
 </div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>
-<script src="js/gemstones.js"></script>
-<script src="js/pricing-engine.js"></script>
-<script src="js/stl-exporter.js"></script>
-<script src="js/cad-engine.js"></script>
-<script src="js/ai-designer.js"></script>
-<script src="js/spec-sheet.js"></script>
-<script src="js/ui-controller.js"></script>
+<script type="module">
+  // three.min.js is deprecated (removed in r160), so load the ES module build and
+  // expose it as a global for the classic scripts below, which run in order after it.
+  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js';
+  window.THREE = THREE;
+  const scripts = ['gemstones', 'pricing-engine', 'stl-exporter', 'cad-engine', 'ai-designer', 'spec-sheet', 'ui-controller'];
+  for (const name of scripts) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'js/' + name + '.js';
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('Failed to load js/' + name + '.js'));
+      document.body.appendChild(s);
+    });
+  }
+</script>
 </body>
 </html>
