@@ -14,8 +14,6 @@ const AurixMarketplace = (() => {
       config: { product: 'pendant', pendantShape: 'heart', carat: 1, metalType: 'rose', halo: 'hidden', pendantStone: true } },
     { id: 'f4', title: '“Maya” Pill Name Plate', seller_name: 'Noor Atelier', price: 12, description: 'Serif lettering on a pill-shaped plate with a jump ring at each end. Change the name in the studio.',
       config: { product: 'nameplate', plateText: 'Maya', plateFont: 'serif', plateStyle: 'pill', metalType: '14k-yellow' } },
-    { id: 'f5', title: 'Bezel Cushion Sapphire', seller_name: 'Halden Jewels', price: 42, description: '3 ct cushion sapphire in a bezel, flat band, 18K white gold. Built for everyday wear.',
-      config: { product: 'ring', gemShape: 'cushion', stoneType: 'sapphire', carat: 3, metalType: '18k-white', headStyle: 'bezel', profile: 'flat' } },
     { id: 'f6', title: 'Marquise Ruby Drop', seller_name: 'Marlowe & Co', price: 20, description: 'Marquise ruby pendant framed by a classic pavé halo.',
       config: { product: 'pendant', pendantShape: 'marquise', stoneType: 'ruby', carat: 1.2, metalType: '18k-yellow', halo: 'classic', pendantStone: true } },
     { id: 'f7', title: 'Block Initials Bracelet Plate', seller_name: 'Noor Atelier', price: 0, description: 'A free starter: bold block initials on a square sterling-silver plate.',
