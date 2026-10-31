@@ -12,10 +12,15 @@
 <div class="app">
   <header class="top">
     <div class="brand">AURIX<small>Jewelry CAD Studio</small></div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="tab-studio" aria-selected="true" type="button">Studio</button>
+      <button class="tab" role="tab" id="tab-market" aria-selected="false" type="button">Marketplace</button>
+    </nav>
     <div class="spacer"></div>
     <span class="who" id="who"></span>
     <button class="btn" id="btn-designs" hidden>My designs</button>
     <button class="btn" id="btn-save">Save design</button>
+    <button class="btn" id="btn-sell" title="List this design in the marketplace">Sell this design</button>
     <button class="btn" id="btn-account">Sign in</button>
     <button class="btn" id="btn-store" aria-pressed="false">Storefront view</button>
     <button class="btn" id="btn-spec">Spec sheet</button>
@@ -125,6 +130,25 @@
       <div class="view-tools"><span>Drag to rotate · scroll to zoom</span><button class="btn only-ring" id="btn-focus" aria-pressed="false">Focus stone</button><button class="btn" id="btn-rotate" aria-pressed="true">Auto-rotate: on</button></div>
     </main>
   </div>
+
+    <section class="market" id="market" aria-label="Marketplace">
+      <div class="m-wrap">
+        <div class="m-hero">
+          <h2>Marketplace</h2>
+          <p id="market-count">Jewelry designs from independent makers</p>
+          <p class="m-sub">Browse rings, pendants and name plates, or publish your own design and sell it.</p>
+        </div>
+        <div class="m-bar">
+          <input type="search" id="market-q" placeholder="Search designs or makers" aria-label="Search the marketplace">
+          <div class="chips" id="market-cats" role="group" aria-label="Category"></div>
+          <select id="market-sort" aria-label="Sort"><option value="new">Newest</option><option value="popular">Most liked</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option></select>
+          <button class="chip" type="button" id="market-mine" aria-pressed="false">My listings</button>
+          <button class="btn primary" type="button" id="market-publish">Publish a design</button>
+        </div>
+        <div class="m-notice" id="market-notice" hidden role="status"></div>
+        <div class="m-grid" id="market-grid"></div>
+      </div>
+    </section>
 </div>
 
 <div class="modal" id="spec-modal" role="dialog" aria-modal="true" aria-label="Specification sheet">
@@ -145,6 +169,33 @@
   <div class="card wide"><h3>My designs</h3><div id="designs-list"></div>
     <div class="row" style="margin:12px 0 0"><button class="btn" type="button" id="designs-close">Close</button></div></div>
 </div>
+<div class="modal dlg" id="publish-modal" role="dialog" aria-modal="true" aria-label="Publish a design">
+  <form class="card wide" id="publish-form">
+    <h3>Publish to the marketplace</h3>
+    <img class="p-thumb" id="p-thumb" alt="Preview of the design you are publishing">
+    <p class="hint" style="text-align:center">This lists the design currently open in the studio.</p>
+    <div class="row"><label for="pub-title">Title</label><input type="text" id="pub-title" maxlength="80" required></div>
+    <div class="row"><label for="pub-seller">Seller name</label><input type="text" id="pub-seller" maxlength="40" required></div>
+    <div class="row"><label for="pub-price">Price (USD)</label><input type="number" id="pub-price" min="0" max="100000" step="0.01" required></div>
+    <div class="row"><label for="pub-desc">Description</label><textarea id="pub-desc" maxlength="600" placeholder="What makes this design special?"></textarea></div>
+    <div class="auth-err" id="pub-err" role="alert"></div>
+    <div class="row" style="margin:12px 0 0"><button class="btn primary" type="submit" id="pub-submit">Publish</button><button class="btn" type="button" id="pub-cancel">Cancel</button></div>
+  </form>
+</div>
+<div class="modal dlg" id="listing-modal" role="dialog" aria-modal="true" aria-label="Listing">
+  <div class="card listing">
+    <img id="l-img" alt="">
+    <div class="l-info">
+      <h3 id="l-title"></h3><div class="l-seller" id="l-seller"></div>
+      <p id="l-desc"></p>
+      <table class="l-specs" id="l-specs"></table>
+      <div class="l-price" id="l-price"></div>
+      <div class="row l-actions"><button class="btn primary" type="button" id="l-buy">Buy design</button><button class="btn" type="button" id="l-open">Open in studio</button>
+        <button class="m-like" type="button" id="l-like" aria-pressed="false" aria-label="Like"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.5-9.2C1.2 8.6 3 5 6.4 5c2 0 3.6 1.1 5.6 3.2C14 6.1 15.6 5 17.6 5 21 5 22.8 8.6 21.5 11.8 19.5 16.4 12 21 12 21z"/></svg></button></div>
+      <div class="row l-actions"><button class="btn" type="button" id="l-del" hidden>Remove listing</button><button class="btn" type="button" id="l-close">Close</button></div>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -159,7 +210,7 @@
   import { FontLoader } from 'three/addons/loaders/FontLoader.js';
   import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
   window.THREE = { ...THREE_NS, FontLoader, TextGeometry };
-  const scripts = ['gemstones', 'pricing-engine', 'stl-exporter', 'cad-engine', 'ai-designer', 'spec-sheet', 'cloud', 'ui-controller'];
+  const scripts = ['gemstones', 'pricing-engine', 'stl-exporter', 'cad-engine', 'ai-designer', 'spec-sheet', 'cloud', 'marketplace', 'ui-controller'];
   for (const name of scripts) {
     await new Promise((resolve, reject) => {
       const s = document.createElement('script');

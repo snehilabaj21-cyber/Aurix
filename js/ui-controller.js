@@ -269,5 +269,7 @@
   $('btn-designs').addEventListener('click', showDesigns);
   $('designs-close').addEventListener('click', () => closeModal('designs-modal'));
 
+  AurixMarketplace.init({ studio, $, toast, applyConfig, getUser: () => me, openAuth: () => { setAuthMode(false); openModal('auth-modal'); } });
+
   window.aurix = studio; // handy for debugging in the console
 })();

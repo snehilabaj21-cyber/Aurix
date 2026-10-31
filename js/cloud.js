@@ -35,5 +35,33 @@ const AurixCloud = (() => {
     if (error) throw error;
   }
 
-  return { user, onAuth, signIn, signUp, signOut, saveDesign, listDesigns, deleteDesign };
+  /* marketplace: public listings, likes. Rejects if the listings table has not been created yet. */
+  async function listListings() {
+    const { data, error } = await db.from('listings')
+      .select('id,user_id,seller_name,title,description,product,price,config,thumbnail,created_at,listing_likes(count)')
+      .order('created_at', { ascending: false }).limit(200);
+    if (error) throw error;
+    return data.map((r) => ({ ...r, likes: r.listing_likes && r.listing_likes[0] ? r.listing_likes[0].count : 0 }));
+  }
+  async function myLikes() {
+    const { data, error } = await db.from('listing_likes').select('listing_id');
+    if (error) throw error;
+    return data.map((r) => r.listing_id);
+  }
+  async function publishListing(row) {
+    const { data, error } = await db.from('listings').insert(row).select('id').single();
+    if (error) throw error;
+    return data.id;
+  }
+  async function deleteListing(id) {
+    const { error } = await db.from('listings').delete().eq('id', id);
+    if (error) throw error;
+  }
+  async function setLike(listingId, on) {
+    const q = on ? db.from('listing_likes').insert({ listing_id: listingId }) : db.from('listing_likes').delete().eq('listing_id', listingId);
+    const { error } = await q;
+    if (error) throw error;
+  }
+
+  return { user, onAuth, signIn, signUp, signOut, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike };
 })();

@@ -820,4 +820,22 @@ class CADStudio {
     }
     return out;
   }
+
+  // Small JPEG of the current build for marketplace cards. Does not touch the visible camera.
+  captureThumbnail(W = 640, H = 480) {
+    const r = this.renderer, size = r.getSize(new THREE.Vector2()), pr = r.getPixelRatio();
+    const prevAuto = this.autoRotate, prevOrbit = { ...this.orbit }; this.autoRotate = false;
+    const ring = this.config.product === 'ring';
+    this.ground.visible = false;
+    try {
+      r.setPixelRatio(1); r.setSize(W, H, false); r.setClearColor(0x24201b, 1);
+      this.camera.aspect = W / H; this.camera.updateProjectionMatrix();
+      this.placeCamera(0.6, ring ? 1.2 : 1.35, ring ? 58 : Math.min(140, Math.max(36, (this.geom.extent || 30) * 2.4)));
+      r.render(this.scene, this.camera);
+      return r.domElement.toDataURL('image/jpeg', 0.82);
+    } finally {
+      this.ground.visible = true; r.setClearColor(0x000000, 0); r.setPixelRatio(pr); r.setSize(size.x, size.y, true);
+      this.resize(); this.autoRotate = prevAuto; this.orbit = prevOrbit;
+    }
+  }
 }
