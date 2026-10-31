@@ -116,10 +116,13 @@
   $('ai-prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runAI(); });
 
   /* ----- header actions ----- */
-  $('btn-stl').addEventListener('click', () => {
-    const n = studio.exportSTL('aurix-' + SpecSheet.jobNumber(cfg()) + '.stl', true);
-    toast('Exported STL · ' + n.toLocaleString() + ' triangles (shrinkage-compensated)');
-  });
+  const exportStl = (compensate) => {
+    const r = studio.exportSTL('aurix-' + SpecSheet.jobNumber(cfg()) + (compensate ? '' : '-true-size') + '.stl', compensate);
+    if (!r.triangles) { toast('STL not exported — mesh check failed: ' + r.check.problems.join('; ')); return; }
+    toast('Exported STL · ' + r.triangles.toLocaleString() + ' triangles · ' + r.check.shells + ' watertight solids (' + (compensate ? 'shrinkage-compensated' : 'true size') + ', Z-up)');
+  };
+  $('btn-stl').addEventListener('click', () => exportStl(true));
+  $('btn-stl-true').addEventListener('click', () => exportStl(false));
   $('btn-photo').addEventListener('click', () => { studio.captureStudioPhoto(true); toast('Saved 4K transparent render'); });
   $('btn-spec').addEventListener('click', () => { SpecSheet.render(studio, $('spec-host')); $('spec-modal').classList.add('open'); });
   $('spec-close').addEventListener('click', () => $('spec-modal').classList.remove('open'));

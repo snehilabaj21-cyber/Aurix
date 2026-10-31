@@ -241,6 +241,74 @@ class CADStudio {
 
   static scaledOutline(outline, sx, sz) { return outline.map(([x, z]) => [x * sx, z * (sz === undefined ? sx : sz)]); }
   static perimeter(pts) { let p = 0; for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; p += Math.hypot(a[0] - b[0], a[1] - b[1]); } return p; }
+  // Drop vertices that lie on the straight line between their neighbours; the polygon triangulator
+  // turns them into zero-area triangles and open edges in extruded solids.
+  static dropCollinear(outline) {
+    const n = outline.length;
+    return outline.filter((p, i) => {
+      const a = outline[(i + n - 1) % n], b = outline[(i + 1) % n];
+      const cross = (p[0] - a[0]) * (b[1] - p[1]) - (p[1] - a[1]) * (b[0] - p[0]);
+      return Math.abs(cross) > 1e-4 * Math.hypot(p[0] - a[0], p[1] - a[1]) * Math.hypot(b[0] - p[0], b[1] - p[1]);
+    });
+  }
+  static selfIntersects(p) {
+    const n = p.length, side = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+    for (let i = 0; i < n; i++) for (let j = i + 2; j < n; j++) {
+      if (i === 0 && j === n - 1) continue;
+      const a = p[i], b = p[(i + 1) % n], c = p[j], d = p[(j + 1) % n];
+      if (side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0) return true;
+    }
+    return false;
+  }
+  // Offset outline that is always a simple (non-crossing) polygon, as the extruder needs: true offset where it
+  // behaves, otherwise a uniform scale about the centre (valid for the star-shaped gem outlines).
+  static safeOffset(outline, dist) {
+    const off = CADStudio.dropCollinear(CADStudio.offsetOutline(outline, dist));
+    if (!CADStudio.selfIntersects(off)) return off;
+    const minR = Math.min(...outline.map(([x, z]) => Math.hypot(x, z)));
+    return CADStudio.dropCollinear(CADStudio.scaledOutline(outline, 1 + 2 * dist / minR));
+  }
+  // Outward unit normal at each outline vertex (outline is wound counter-clockwise in x/z).
+  static vertexNormals(outline) {
+    const n = outline.length;
+    return outline.map((p, i) => {
+      const a = outline[(i + n - 1) % n], b = outline[(i + 1) % n];
+      const e = (u, v) => { const dx = v[0] - u[0], dz = v[1] - u[1], l = Math.hypot(dx, dz) || 1; return [dz / l, -dx / l]; };
+      const n1 = e(a, p), n2 = e(p, b), sx = n1[0] + n2[0], sz = n1[1] + n2[1], l = Math.hypot(sx, sz) || 1;
+      return [sx / l, sz / l];
+    });
+  }
+  // Outline pushed outward by `dist` mm along its vertex normals (a true offset, unlike scaling).
+  static signedDist(poly, x, z) { // distance to polygon edge; negative inside
+    let inside = false, d = 1e9;
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i], b = poly[(i + 1) % poly.length];
+      if ((a[1] > z) !== (b[1] > z) && x < (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+      const dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz || 1)));
+      d = Math.min(d, Math.hypot(x - a[0] - t * dx, z - a[1] - t * dz));
+    }
+    return inside ? -d : d;
+  }
+  // Outline pushed outward by `dist` mm. Vertices in a notch (heart cleft) are pushed on until they are truly `dist` clear.
+  static offsetOutline(outline, dist) {
+    const nrm = CADStudio.vertexNormals(outline);
+    const clear = (px, pz) => CADStudio.signedDist(outline, px, pz) >= dist - 0.01;
+    return outline.map(([x, z], i) => {
+      if (clear(x + nrm[i][0] * dist, z + nrm[i][1] * dist)) return [x + nrm[i][0] * dist, z + nrm[i][1] * dist];
+      // notch: the normal points into a neighbouring wall, so search every direction for the nearest clear point
+      let best = [x + nrm[i][0] * dist, z + nrm[i][1] * dist], bestCost = 1e9;
+      for (let a = 0; a < 48; a++) {
+        const dx = Math.cos(a * Math.PI / 24), dz = Math.sin(a * Math.PI / 24);
+        for (let k = dist; k <= dist * 8; k += dist * 0.05) {
+          if (!clear(x + dx * k, z + dz * k)) continue;
+          const cost = k * (1.4 - (dx * nrm[i][0] + dz * nrm[i][1]) * 0.4);
+          if (cost < bestCost) { bestCost = cost; best = [x + dx * k, z + dz * k]; }
+          break;
+        }
+      }
+      return best;
+    });
+  }
   static farthest(outline, deg) {
     const dx = Math.cos(deg * Math.PI / 180), dz = Math.sin(deg * Math.PI / 180);
     let best = outline[0], bv = -1e9;
@@ -323,7 +391,7 @@ class CADStudio {
       mesh.userData.metal = kind === 'metal'; mesh.userData.stone = kind !== 'metal';
       mesh.castShadow = true; this.ring.add(mesh); return mesh;
     };
-    const addMetal = (geo, pos, rot) => { const m = new THREE.Mesh(geo, metalMat); if (pos) m.position.copy(pos); if (rot) m.rotation.set(...rot); return add(m, 'metal'); };
+    const addMetal = (geo, pos, rot, quat) => { const m = new THREE.Mesh(geo, metalMat); if (pos) m.position.copy(pos); if (rot) m.rotation.set(...rot); if (quat) m.quaternion.copy(quat); return add(m, 'metal'); };
     const addBeads = (points, radius) => {
       const inst = new THREE.InstancedMesh(new THREE.SphereGeometry(radius, 14, 10), beadMat, points.length);
       const mtx = new THREE.Matrix4();
@@ -345,7 +413,7 @@ class CADStudio {
     // seat plate under the head
     inHead = true;
     {
-      const sh = new THREE.Shape(); const so = CADStudio.scaledOutline(outline, 0.62);
+      const sh = new THREE.Shape(); const so = CADStudio.dropCollinear(CADStudio.scaledOutline(outline, 0.62));
       so.forEach(([x, z], i) => (i ? sh.lineTo(x, z) : sh.moveTo(x, z)));
       const geo = new THREE.ExtrudeGeometry(sh, { depth: 1.0, bevelEnabled: false });
       addMetal(geo, new THREE.Vector3(0, Rout - 0.5, 0), [-Math.PI / 2, 0, 0]);
@@ -354,9 +422,9 @@ class CADStudio {
     // head
     if (cfg.headStyle === 'bezel') {
       const sh = new THREE.Shape(), wall = Math.max(0.5, cfg.prongThickness * 0.7);
-      CADStudio.scaledOutline(outline, 1 + wall / (L / 2), 1 + wall / (W / 2)).forEach(([x, z], i) => (i ? sh.lineTo(x, z) : sh.moveTo(x, z)));
+      CADStudio.safeOffset(outline, wall + 0.03).forEach(([x, z], i) => (i ? sh.lineTo(x, z) : sh.moveTo(x, z)));
       const hole = new THREE.Path();
-      CADStudio.scaledOutline(outline, 0.97).reverse().forEach(([x, z], i) => (i ? hole.lineTo(x, z) : hole.moveTo(x, z)));
+      CADStudio.safeOffset(outline, 0.03).reverse().forEach(([x, z], i) => (i ? hole.lineTo(x, z) : hole.moveTo(x, z)));
       sh.holes.push(hole);
       const yb = Rout - 0.3, top = yG + 0.35, geo = new THREE.ExtrudeGeometry(sh, { depth: top - yb, bevelEnabled: false });
       addMetal(geo, new THREE.Vector3(0, yb, 0), [-Math.PI / 2, 0, 0]);
@@ -368,34 +436,68 @@ class CADStudio {
       else if (style === '6-prong') angles = [30, 90, 150, 210, 270, 330];
       else if (style === 'double-claw') angles = [33, 57, 123, 147, 213, 237, 303, 327];
       else angles = tips ? [0, 90, 180, 270] : [45, 135, 225, 315];
-      const yBot = Rout + 0.3, yTop = yG + 0.55 * (0.2 * D), s0 = 0.62, s1 = 1.05;
+      const yBot = Rout + 0.3;
       const r1 = pr * (style === 'compass' ? 1.25 : 1), r0 = r1 * 1.15;
+      const step = ['emerald', 'asscher', 'radiant', 'princess'].includes(cfg.gemShape);
+      const gap = 0.08, hp = 0.76 * D, g = 0.02 * D;
+      // stone outline scale at a given depth below the girdle plane (mirrors the gem geometry)
+      const pavProfile = step ? [[0, 1], [0.3, 0.82], [0.62, 0.58], [1, 0.04]] : [[0, 1], [0.55, 0.52], [1, 0.04]];
+      const stoneScale = (dy) => {
+        const f = Math.min(1, Math.max(0, (dy - g) / hp));
+        for (let i = 1; i < pavProfile.length; i++) {
+          const [f0, s0] = pavProfile[i - 1], [f1, s1] = pavProfile[i];
+          if (f <= f1) return s0 + (s1 - s0) * (f - f0) / (f1 - f0);
+        }
+        return 0.04;
+      };
+      const depths = pavProfile.slice(0, -1).map(([f]) => g + f * hp).reverse(); // kinks, deepest first
+      const dyBot = yG - yBot;
+      // stone outline scale vs. height above the girdle (pavilion below, first crown facet above)
+      const crownDy = g + (step ? 0.4 : 0.45) * 0.2 * D, crownS = step ? 0.9 : 0.86;
+      const prof = pavProfile.map(([f, s]) => [-(g + f * hp), s]).reverse().concat([[g, 1], [crownDy, crownS]]); // pavProfile already ends at the girdle (-g, 1)
+      // steepest surface slope (scale change per mm of height) touching this height
+      const slopeAt = (h) => prof.reduce((m, [y1, s1], i) => {
+        if (!i) return m;
+        const [y0, s0] = prof[i - 1];
+        return h >= y0 - 1e-6 && h <= y1 + 1e-6 ? Math.max(m, Math.abs((s1 - s0) / (y1 - y0))) : m;
+      }, 0);
+      const nrm = CADStudio.vertexNormals(outline);
       angles.forEach((deg) => {
-        const p = CADStudio.farthest(outline, deg);
-        const bot = new THREE.Vector3(p[0] * s0, yBot, p[1] * s0), top = new THREE.Vector3(p[0] * s1, yTop, p[1] * s1);
-        const cyl = CADStudio.between(bot, top, r0, r1 * 0.95);
-        addMetal(cyl.geometry, cyl.position, null).quaternion.copy(cyl.quaternion);
-        const ball = new THREE.SphereGeometry(r1 * 1.18, 14, 10);
-        addMetal(ball, top);
+        const p = CADStudio.farthest(outline, deg), n = nrm[outline.indexOf(p)];
+        // the surface leans away from the vertical, so the horizontal gap must grow to keep the true gap
+        const lean = Math.max(0, p[0] * n[0] + p[1] * n[1]);
+        const at = (s, h, y, clear) => {
+          const off = clear * Math.sqrt(1 + (slopeAt(h) * lean) ** 2);
+          return new THREE.Vector3(p[0] * s + n[0] * off, y, p[1] * s + n[1] * off);
+        };
+        // claw: outside the pavilion, past the girdle, then curling over the crown edge
+        const pts = [at(stoneScale(dyBot), -dyBot, yBot, r0 + gap)];
+        depths.forEach((dy) => { if (dy < dyBot) pts.push(at(stoneScale(dy), -dy, yG - dy, r1 + gap)); });
+        pts.push(at(1, 0, yG, r1 + gap));
+        // tip rests on the crown's first facet edge
+        pts.push(at(crownS, crownDy, yG + crownDy, r1 + 0.03));
+        for (let i = 1; i < pts.length; i++) {
+          const cyl = CADStudio.between(pts[i - 1], pts[i], i === 1 ? r0 : r1, r1);
+          addMetal(cyl.geometry, cyl.position, null, cyl.quaternion);
+          addMetal(new THREE.SphereGeometry(r1, 12, 8), pts[i]);
+        }
       });
-      // gallery rails that run through the prongs
-      [0.3, 0.62].forEach((f) => {
-        const s = s0 + (s1 - s0) * f, y = yBot + (yTop - yBot) * f;
-        const pts = CADStudio.scaledOutline(outline, s).map(([x, z]) => new THREE.Vector3(x, y, z));
-        addMetal(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, true), 96, 0.3, 8, true));
-      });
+      // gallery rail tying the prongs together, just outside the pavilion
+      {
+        const dy = g + 0.3 * hp, s = stoneScale(dy), rr = Math.min(0.25, r1 * 0.7);
+        const lean = Math.sqrt(1 + (slopeAt(-dy) * Math.max(...outline.map(([x, z]) => Math.hypot(x, z)))) ** 2);
+        const pts = CADStudio.offsetOutline(CADStudio.scaledOutline(outline, s), (rr + gap) * lean).map(([x, z]) => new THREE.Vector3(x, yG - dy, z));
+        addMetal(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, true), 96, rr, 8, true));
+      }
     }
 
     // halo
-    const hs = (g) => [1 + g / (L / 2), 1 + g / (W / 2)];
+    // halo rings follow the girdle outline at a true offset (scaling would crowd or gap the tips of pear/heart/marquise)
     if (cfg.halo === 'hidden') {
-      const [sx, sz] = hs(0.1);
-      addBeads(CADStudio.pointsAlong(outline, yG - 1.0, 1.0 + 0.5 / (L / 2) + sx - 1, 1.0 + 0.5 / (W / 2) + sz - 1, 0.42), 0.42);
+      addBeads(CADStudio.pointsAlong(CADStudio.offsetOutline(outline, 0.6), yG - 1.0, 1, 1, 0.42), 0.42);
     } else if (cfg.halo === 'classic') {
-      const [sx, sz] = hs(0.55);
-      const pts = CADStudio.pointsAlong(outline, yG + 0.15, sx, sz, 0.38);
-      addBeads(pts, 0.38);
-      const cp = CADStudio.scaledOutline(outline, sx - 0.02, sz - 0.02).map(([x, z]) => new THREE.Vector3(x, yG - 0.15, z));
+      addBeads(CADStudio.pointsAlong(CADStudio.offsetOutline(outline, 0.55), yG + 0.15, 1, 1, 0.38), 0.38);
+      const cp = CADStudio.offsetOutline(outline, 0.55).map(([x, z]) => new THREE.Vector3(x, yG - 0.15, z));
       addMetal(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(cp, true), 96, 0.45, 8, true));
     }
 
@@ -440,8 +542,11 @@ class CADStudio {
 
   /* ---------- output ---------- */
   exportSTL(filename = 'aurix-ring.stl', compensate = true) {
+    if (this._pending) this.rebuild(); // flush a queued edit so the file matches what is on screen
+    const check = STLExporter.validate(this.ring);
+    if (!check.ok) return { check };
     const shrink = compensate ? PricingEngine.ALLOYS[this.config.metalType].shrink : 0;
-    return STLExporter.download(this.ring, filename, 1 + shrink);
+    return { check, triangles: STLExporter.download(this.ring, filename, 1 + shrink) };
   }
 
   captureStudioPhoto(transparent = true, filename = 'aurix-render.png') {
