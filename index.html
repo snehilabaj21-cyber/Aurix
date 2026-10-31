@@ -27,8 +27,13 @@
   <div class="main">
     <aside class="controls" aria-label="Design controls">
       <section class="grp">
+        <h3>Product</h3>
+        <div class="chips" id="products" role="group" aria-label="Product type"></div>
+      </section>
+
+      <section class="grp">
         <h3>AI design assistant</h3>
-        <textarea id="ai-prompt" placeholder='e.g. "2.5ct emerald cut, platinum, hidden halo, knife edge band, size 7"'></textarea>
+        <textarea id="ai-prompt" placeholder='e.g. "2.5ct emerald cut ring, platinum, hidden halo" or "gold name plate bracelet saying &quot;Maya&quot;"'></textarea>
         <div class="row" style="margin-bottom:0"><button class="btn primary" id="ai-go">Design it</button>
           <div class="chips" id="ai-examples"></div></div>
         <div class="ai-note" id="ai-note" role="status"></div>
@@ -36,19 +41,47 @@
         <p class="hint">Rule-based interpreter that runs in your browser — no external AI service.</p>
       </section>
 
-      <section class="grp">
+      <section class="grp only-stone">
         <h3>Center stone</h3>
         <div class="row"><label for="stone">Stone</label><select id="stone"></select></div>
         <div class="swatches" id="stone-sw" style="margin:0 0 12px"></div>
         <div class="shapes" id="shapes"></div>
         <div class="row"><label for="carat">Carat</label><input type="range" id="carat" min="0.3" max="5" step="0.05"><output id="carat-o"></output></div>
-        <div class="row"><label for="rot">Rotate stone</label><input type="range" id="rot" min="-90" max="90" step="5"><output id="rot-o"></output></div>
-        <div class="chips" style="margin-bottom:6px"><button class="chip" type="button" id="rot-ns">North-south</button><button class="chip" type="button" id="rot-ew">East-west (90°)</button></div>
+        <div class="row only-ring"><label for="rot">Rotate stone</label><input type="range" id="rot" min="-90" max="90" step="5"><output id="rot-o"></output></div>
+        <div class="chips only-ring" style="margin-bottom:6px"><button class="chip" type="button" id="rot-ns">North-south</button><button class="chip" type="button" id="rot-ew">East-west (90°)</button></div>
         <div class="row" id="color-row"><label for="color">Color</label><select id="color"></select></div>
         <div class="row"><label for="clarity">Clarity</label><select id="clarity"></select></div>
       </section>
 
-      <section class="grp">
+      <section class="grp only-pendant">
+        <h3>Pendant</h3>
+        <div class="shapes" id="p-shapes" style="margin-bottom:12px"></div>
+        <div class="row"><label for="p-size">Height</label><input type="range" id="p-size" min="14" max="45" step="1"><output id="p-size-o"></output></div>
+        <div class="row"><label for="p-thick">Thickness</label><input type="range" id="p-thick" min="0.9" max="3" step="0.1"><output id="p-thick-o"></output></div>
+        <div class="row"><label>Center stone</label><div class="chips" id="p-stone"></div></div>
+        <div class="row only-stone"><label for="p-halo">Halo</label><select id="p-halo"><option value="none">None</option><option value="hidden">Hidden halo</option><option value="classic">Classic pavé halo</option></select></div>
+        <div class="row"><label>Bail</label><div class="chips" id="p-bail"></div></div>
+        <p class="hint" id="p-fit" role="status"></p>
+      </section>
+
+      <section class="grp text-sec">
+        <h3>Lettering</h3>
+        <div class="row"><label for="plate-text">Text</label><input type="text" id="plate-text" maxlength="20" placeholder="Name or word"></div>
+        <div class="chips" id="fonts" role="group" aria-label="Typeface" style="margin-bottom:12px"></div>
+        <div class="row"><label for="t-size">Letter height</label><input type="range" id="t-size" min="2.5" max="9" step="0.5"><output id="t-size-o"></output></div>
+        <div class="row"><label for="t-raise">Raised by</label><input type="range" id="t-raise" min="0.4" max="1.6" step="0.1"><output id="t-raise-o"></output></div>
+      </section>
+
+      <section class="grp only-plate">
+        <h3>Name plate</h3>
+        <div class="chips" id="plate-styles" role="group" aria-label="Plate shape" style="margin-bottom:12px"></div>
+        <div class="row"><label for="pl-h">Height</label><input type="range" id="pl-h" min="6" max="18" step="0.5"><output id="pl-h-o"></output></div>
+        <div class="row"><label for="pl-th">Thickness</label><input type="range" id="pl-th" min="0.9" max="2.6" step="0.1"><output id="pl-th-o"></output></div>
+        <div class="row"><label>Bracelet loops</label><div class="chips" id="plate-loops"></div></div>
+        <p class="hint">Width follows the text. A jump ring at each end takes your bracelet chain.</p>
+      </section>
+
+      <section class="grp only-ring">
         <h3>Setting</h3>
         <div class="chips" id="heads" role="group" aria-label="Head style"></div>
         <div class="row"><label for="prong">Prong Ø</label><input type="range" id="prong" min="0.4" max="1.6" step="0.05"><output id="prong-o"></output></div>
@@ -56,7 +89,7 @@
         <div class="row"><label for="accents">Shank pavé</label><select id="accents"><option value="none">None</option><option value="half">Half way</option><option value="full">Full eternity</option></select></div>
       </section>
 
-      <section class="grp">
+      <section class="grp only-ring">
         <h3>Band</h3>
         <div class="chips" id="profiles" role="group" aria-label="Band profile"></div>
         <div class="row"><label for="thick">Thickness</label><input type="range" id="thick" min="0.6" max="3" step="0.1"><output id="thick-o"></output></div>
@@ -82,14 +115,14 @@
         <div class="price" id="price">—</div>
         <table style="margin-top:8px">
           <tr><td>Metal weight</td><td id="m-weight">—</td></tr>
-          <tr><td>Center stone</td><td id="m-stone">—</td></tr>
-          <tr><td>Ring size</td><td id="m-size">—</td></tr>
+          <tr><td id="m-stone-l">Center stone</td><td id="m-stone">—</td></tr>
+          <tr><td id="m-size-l">Ring size</td><td id="m-size">—</td></tr>
         </table>
         <details><summary>Cost breakdown (wholesale)</summary><table id="breakdown"></table></details>
         <div class="store-cta"><button class="btn primary" id="btn-bag">Add to bag</button><button class="btn" id="btn-share">Copy link</button></div>
       </div>
 
-      <div class="view-tools"><span>Drag to rotate · scroll to zoom</span><button class="btn" id="btn-focus" aria-pressed="false">Focus stone</button><button class="btn" id="btn-rotate" aria-pressed="true">Auto-rotate: on</button></div>
+      <div class="view-tools"><span>Drag to rotate · scroll to zoom</span><button class="btn only-ring" id="btn-focus" aria-pressed="false">Focus stone</button><button class="btn" id="btn-rotate" aria-pressed="true">Auto-rotate: on</button></div>
     </main>
   </div>
 </div>
@@ -115,11 +148,17 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
+                 "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/" } }
+</script>
 <script type="module">
   // three.min.js is deprecated (removed in r160), so load the ES module build and
   // expose it as a global for the classic scripts below, which run in order after it.
-  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js';
-  window.THREE = THREE;
+  import * as THREE_NS from 'three';
+  import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+  import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+  window.THREE = { ...THREE_NS, FontLoader, TextGeometry };
   const scripts = ['gemstones', 'pricing-engine', 'stl-exporter', 'cad-engine', 'ai-designer', 'spec-sheet', 'cloud', 'ui-controller'];
   for (const name of scripts) {
     await new Promise((resolve, reject) => {

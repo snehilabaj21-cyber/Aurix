@@ -72,8 +72,8 @@ const STLExporter = (() => {
     return { ...r, ok: !problems.length, problems };
   }
 
-  function toBinary(group, linearScale = 1) {
-    const tris = collectTriangles(group, linearScale, true);
+  function toBinary(group, linearScale = 1, zUp = true) {
+    const tris = collectTriangles(group, linearScale, zUp);
     // sit the ring on the build plate (z = 0), centred in x/y
     let minZ = Infinity, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     tris.forEach((t) => { for (let i = 0; i < 9; i += 3) { minX = Math.min(minX, t[i]); maxX = Math.max(maxX, t[i]); minY = Math.min(minY, t[i + 1]); maxY = Math.max(maxY, t[i + 1]); minZ = Math.min(minZ, t[i + 2]); } });
@@ -96,8 +96,8 @@ const STLExporter = (() => {
     return { buffer: buf, triangles: tris.length };
   }
 
-  function download(group, filename, linearScale = 1) {
-    const { buffer, triangles } = toBinary(group, linearScale);
+  function download(group, filename, linearScale = 1, zUp = true) {
+    const { buffer, triangles } = toBinary(group, linearScale, zUp);
     const url = URL.createObjectURL(new Blob([buffer], { type: 'model/stl' }));
     const a = document.createElement('a');
     a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
