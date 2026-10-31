@@ -102,7 +102,7 @@ const AurixMarketplace = (() => {
     list.forEach((it) => {
       const src = imgOf(it), c = document.createElement('article');
       c.className = 'm-card';
-      c.innerHTML = '<button class="m-img' + (src ? '' : ' loading') + '" type="button" aria-label="Open ' + esc(it.title) + '"><img data-thumb="' + esc(it.id) + '" alt="' + esc(it.title) + '"' + (src ? ' src="' + src + '"' : '') + '>' +
+      c.innerHTML = '<button class="m-img' + (src || !it.featured ? '' : ' loading') + '" type="button" aria-label="Open ' + esc(it.title) + '"><img data-thumb="' + esc(it.id) + '" alt="' + esc(it.title) + '"' + (src ? ' src="' + src + '"' : '') + '>' +
         '<span class="m-over"><b>' + esc(it.title) + '</b><i>' + esc(PRODUCTS[it.config.product] || '') + '</i></span></button>' +
         '<div class="m-foot"><span class="m-av" aria-hidden="true">' + esc((it.seller_name || '?').charAt(0).toUpperCase()) + '</span>' +
         '<span class="m-who">' + esc(it.seller_name) + (it.featured ? '<em>Featured</em>' : '') + '</span>' +
