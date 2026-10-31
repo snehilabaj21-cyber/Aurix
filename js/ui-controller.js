@@ -207,8 +207,11 @@
   const openModal = (id) => $(id).classList.add('open'), closeModal = (id) => $(id).classList.remove('open');
   const setAuthMode = (up) => {
     signingUp = up;
-    $('auth-title').textContent = $('auth-submit').textContent = up ? 'Create account' : 'Sign in';
-    $('auth-switch').textContent = up ? 'I have an account' : 'Create account';
+    $('auth-title').textContent = up ? 'Create your account' : 'Welcome back!';
+    $('auth-sub').textContent = up ? 'Join Aurix to save designs and sell them' : 'Sign in to your account to continue';
+    $('auth-submit').textContent = up ? 'Create account' : 'Sign in';
+    $('auth-alt-text').textContent = up ? 'Already have an account?' : 'Don’t have an account?';
+    $('auth-switch').textContent = up ? 'Sign in' : 'Sign up';
     $('auth-pass').autocomplete = up ? 'new-password' : 'current-password';
     $('auth-err').textContent = '';
   };
@@ -224,6 +227,10 @@
     setAuthMode(false); openModal('auth-modal'); $('auth-email').focus();
   });
   $('auth-switch').addEventListener('click', () => setAuthMode(!signingUp));
+  $('auth-eye').addEventListener('click', (e) => {
+    const show = $('auth-pass').type === 'password'; $('auth-pass').type = show ? 'text' : 'password';
+    e.currentTarget.textContent = show ? 'Hide' : 'Show'; e.currentTarget.setAttribute('aria-pressed', show); e.currentTarget.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  });
   $('auth-close').addEventListener('click', () => closeModal('auth-modal'));
   $('auth-form').addEventListener('submit', async (e) => {
     e.preventDefault();

@@ -156,15 +156,30 @@
   <div class="bar-actions"><button class="btn primary" id="spec-print">Print / save PDF</button><button class="btn" id="spec-close">Close</button></div>
   <div id="spec-host"></div>
 </div>
-<div class="modal dlg" id="auth-modal" role="dialog" aria-modal="true" aria-label="Account">
-  <form class="card" id="auth-form">
-    <h3 id="auth-title">Sign in</h3>
-    <div class="row"><label for="auth-email">Email</label><input type="email" id="auth-email" autocomplete="email" required></div>
-    <div class="row"><label for="auth-pass">Password</label><input type="password" id="auth-pass" autocomplete="current-password" minlength="8" required></div>
-    <div class="auth-err" id="auth-err" role="alert"></div>
-    <div class="row" style="margin:12px 0 0"><button class="btn primary" type="submit" id="auth-submit">Sign in</button>
-      <button class="btn" type="button" id="auth-switch">Create account</button><button class="btn" type="button" id="auth-close">Cancel</button></div>
-  </form>
+<div class="modal auth-page" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+  <div class="auth-split">
+    <aside class="auth-brand" aria-hidden="true">
+      <svg class="auth-art" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="ag" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e6c77f"/><stop offset="1" stop-color="#c9a45c" stop-opacity=".1"/></linearGradient></defs>
+        <g fill="none" stroke="url(#ag)" stroke-width="1.4"><path d="M-40 560C120 470 220 640 360 540S560 380 660 470"/><path d="M-40 610C130 520 230 690 370 590S570 430 660 520" opacity=".7"/><path d="M-40 660C140 570 240 740 380 640S580 480 660 570" opacity=".45"/><path d="M-40 710C150 620 250 790 390 690S590 530 660 620" opacity=".25"/><circle cx="440" cy="250" r="120" opacity=".5"/><circle cx="440" cy="250" r="82" opacity=".35"/><circle cx="440" cy="250" r="44" opacity=".25"/></g></svg>
+      <div class="auth-logo">AURIX</div>
+      <div class="auth-pitch"><h2>Where jewelers design, price and sell their work.</h2><p>The trusted CAD studio for rings, pendants and name plates, with a marketplace for your finished designs.</p></div>
+      <div class="auth-copy">&copy; 2026 Aurix. All rights reserved.</div>
+    </aside>
+    <section class="auth-panel">
+      <button class="auth-x" type="button" id="auth-close" aria-label="Close">&times;</button>
+      <form class="auth-form" id="auth-form">
+        <h3 id="auth-title">Welcome back!</h3>
+        <p class="auth-sub" id="auth-sub">Sign in to your account to continue</p>
+        <label for="auth-email">Email address</label>
+        <input type="email" id="auth-email" autocomplete="email" placeholder="you@studio.com" required>
+        <label for="auth-pass">Password</label>
+        <div class="auth-pw"><input type="password" id="auth-pass" autocomplete="current-password" minlength="8" placeholder="At least 8 characters" required><button type="button" id="auth-eye" aria-label="Show password" aria-pressed="false">Show</button></div>
+        <div class="auth-err" id="auth-err" role="alert"></div>
+        <button class="auth-go" type="submit" id="auth-submit">Sign in</button>
+        <p class="auth-alt"><span id="auth-alt-text">Don’t have an account?</span> <button type="button" id="auth-switch">Sign up</button></p>
+      </form>
+    </section>
+  </div>
 </div>
 <div class="modal dlg" id="designs-modal" role="dialog" aria-modal="true" aria-label="My designs">
   <div class="card wide"><h3>My designs</h3><div id="designs-list"></div>
