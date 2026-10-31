@@ -196,12 +196,15 @@ const AurixMarketplace = (() => {
   }
 
   /* ----- tabs ----- */
-  function show(v) {
+  // push = add a browser-history entry, so the Back button returns to the marketplace
+  function show(v, push = true) {
     document.body.dataset.view = v;
+    if (v === 'market') document.body.classList.remove('from-market');
     ctx.$('tab-studio').setAttribute('aria-selected', v === 'studio'); ctx.$('tab-market').setAttribute('aria-selected', v === 'market');
     if (v === 'market') { if (!items.length) load(); else render(); }
     else setTimeout(() => ctx.studio.resize(), 50);
-    history.replaceState(null, '', v === 'market' ? '#marketplace' : location.pathname + location.search);
+    const url = v === 'market' ? '#marketplace' : location.pathname + location.search;
+    if (push && (location.hash === '#marketplace') !== (v === 'market')) history.pushState(null, '', url);
   }
 
   function init(c) {
@@ -219,14 +222,18 @@ const AurixMarketplace = (() => {
     $('btn-sell').addEventListener('click', openPublish);
     $('publish-form').addEventListener('submit', submitPublish);
     $('pub-cancel').addEventListener('click', () => $('publish-modal').classList.remove('open'));
+    $('btn-back-market').addEventListener('click', () => show('market'));
+    window.addEventListener('popstate', () => show(location.hash === '#marketplace' ? 'market' : 'studio', false));
+    $('listing-modal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeListing(); });
+    $('publish-modal').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
     $('l-close').addEventListener('click', closeListing);
     $('l-like').addEventListener('click', () => { const card = [...document.querySelectorAll('.m-card')].find((el) => el.querySelector('[data-thumb="' + current.id + '"]')); if (card) toggleLike(current, card.querySelector('.m-like')); });
     $('l-buy').addEventListener('click', () => ctx.toast(current.price === 0 ? 'Free designs open straight in the studio' : 'Checkout isn’t connected yet — payments are coming soon'));
-    $('l-open').addEventListener('click', () => { const cfg = { ...CADStudio.DEFAULTS, ...current.config }; closeListing(); show('studio'); ctx.applyConfig(cfg); ctx.toast('Opened in the studio'); });
+    $('l-open').addEventListener('click', () => { const cfg = { ...CADStudio.DEFAULTS, ...current.config }; closeListing(); show('studio'); document.body.classList.add('from-market'); ctx.applyConfig(cfg); ctx.toast('Opened in the studio'); });
     $('l-del').addEventListener('click', () => removeListing(current));
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeListing(); $('publish-modal').classList.remove('open'); } });
     AurixCloud.onAuth(() => { if (items.length && document.body.dataset.view === 'market') load(); });
-    show(location.hash === '#marketplace' ? 'market' : 'studio');
+    show(location.hash === '#marketplace' ? 'market' : 'studio', false);
   }
 
   return { init };

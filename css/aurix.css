@@ -178,3 +178,6 @@ body[data-view=market] #btn-stl, body[data-view=market] #btn-stl-true, body[data
   .tabs { order: 5; margin-left: 0; } .tab { padding: 8px 12px; }
   .market { overflow: visible; } .m-hero h2 { font-size: 36px; } .card.listing { grid-template-columns: 1fr; }
 }
+
+.back-market { display: none; }
+body.from-market[data-view=studio] .back-market { display: inline-block; }
