@@ -12,9 +12,8 @@ const AurixCloud = (() => {
     if (error) throw error;
   }
   async function signUp(email, password) {
-    const { data, error } = await db.auth.signUp({ email, password });
+    const { error } = await db.auth.signUp({ email, password });
     if (error) throw error;
-    return !!data.session; // false when email confirmation is required
   }
   const signOut = () => db.auth.signOut();
 

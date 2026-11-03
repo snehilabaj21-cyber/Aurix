@@ -237,8 +237,8 @@
     const email = $('auth-email').value.trim(), pass = $('auth-pass').value;
     try {
       if (signingUp) {
-        const signedIn = await AurixCloud.signUp(email, pass);
-        toast(signedIn ? 'Account created' : 'Check your email to confirm your account');
+        await AurixCloud.signUp(email, pass);
+        toast('Account created');
       } else { await AurixCloud.signIn(email, pass); toast('Signed in'); }
       closeModal('auth-modal'); $('auth-pass').value = '';
     } catch (err) { $('auth-err').textContent = err.message; }

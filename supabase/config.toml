@@ -6,3 +6,7 @@ project_id = "aurix"
 # Confirmation and password-reset emails link back to the live site.
 site_url = "https://aurix-seven-vert.vercel.app"
 additional_redirect_urls = ["https://aurix-seven-vert.vercel.app", "http://localhost:8080"]
+
+[auth.email]
+# Demo: new accounts can sign in straight away, with no confirmation email.
+enable_confirmations = false
