@@ -7,9 +7,9 @@
 html, body { height: 100%; margin: 0; }
 body { background: var(--bg); color: var(--text); font: 13px/1.45 var(--sans); overflow: hidden; }
 button, input, select, textarea { font: inherit; color: inherit; }
-.app { display: grid; grid-template-rows: 56px 1fr; height: 100%; }
+.app { display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); height: 100%; }
 
-header.top { display: flex; align-items: center; gap: 16px; padding: 0 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
+header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; min-height: 56px; padding: 8px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
 .brand { font: 600 26px/1 var(--serif); letter-spacing: .28em; color: var(--gold-2); }
 .brand small { font: 400 10px var(--sans); letter-spacing: .18em; color: var(--muted); margin-left: 12px; text-transform: uppercase; }
 .top .spacer { flex: 1; }
@@ -242,3 +242,9 @@ body.from-market[data-view=studio] .back-market { display: inline-block; }
 .shop-order { border: 1px solid var(--line); border-radius: 10px; padding: 4px 14px 6px; margin-bottom: 14px; } .shop-order .shop-row:last-child { border-bottom: 0; }
 .shop-order-h { display: flex; justify-content: space-between; padding: 10px 0 4px; font-size: 13px; color: var(--muted); } .shop-order-h b { color: var(--text); }
 @media (max-width: 520px) { .shop-row { flex-wrap: wrap; } .shop-row .meta { flex-basis: calc(100% - 80px); } }
+
+/* header: the action buttons wrap onto extra rows instead of running off-screen */
+.top-actions { display: flex; flex: 1 1 0; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
+.top-actions .who { max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stage, .main, .market { min-width: 0; }
+@media (max-width: 860px) { .top-actions { flex-basis: 100%; justify-content: flex-start; } }
