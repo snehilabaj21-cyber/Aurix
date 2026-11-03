@@ -137,7 +137,7 @@ body[data-product=nameplate] .text-sec, body[data-product=pendant][data-pstone=o
 .tab:focus-visible, .m-img:focus-visible, .m-like:focus-visible { outline: 2px solid var(--gold-2); outline-offset: 2px; }
 .market { display: none; overflow-y: auto; min-height: 0; background: var(--bg); }
 body[data-view=market] .market { display: block; }
-body[data-view=market] .main, body[data-view=market] #btn-store, body[data-view=market] #btn-spec, body[data-view=market] #btn-photo,
+body[data-view=market] .main, body[data-view=sell] .main, body[data-view=market] #btn-store, body[data-view=market] #btn-spec, body[data-view=market] #btn-photo,
 body[data-view=market] #btn-stl, body[data-view=market] #btn-stl-true, body[data-view=market] #btn-save, body[data-view=market] #btn-sell { display: none; }
 .m-wrap { max-width: 1320px; margin: 0 auto; padding: 36px 24px 64px; }
 .m-hero { text-align: center; margin-bottom: 28px; }
@@ -258,7 +258,7 @@ header.top { position: relative; z-index: 30; }
 .menu-item { text-align: left; background: transparent; border: 0; border-radius: 6px; padding: 9px 12px; cursor: pointer; color: var(--text); white-space: nowrap; }
 .menu-item:hover, .menu-item:focus-visible { background: var(--panel-2); color: var(--gold-2); outline: none; }
 .menu-btn { display: none; }
-body[data-view=market] .top-tools, body[data-view=market] .exp { display: none !important; }
+body[data-view=market] .top-tools, body[data-view=market] .exp, body[data-view=sell] .top-tools, body[data-view=sell] .exp { display: none !important; }
 
 @media (max-width: 860px) {
   header.top { gap: 8px 10px; }
@@ -279,3 +279,17 @@ body[data-view=market] .top-tools, body[data-view=market] .exp { display: none !
 }
 
 @media (min-width: 861px) and (max-width: 1180px) { .brand small { display: none; } header.top { gap: 8px 12px; padding: 8px 14px; } }
+
+/* seller dashboard */
+.seller { display: none; overflow-y: auto; min-height: 0; background: var(--bg); }
+body[data-view=sell] .seller { display: block; }
+.sell-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 28px; }
+.sell-stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.sell-stat span { display: block; color: var(--muted); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+.sell-stat b { display: block; margin-top: 6px; font: 600 30px/1 var(--serif); color: var(--gold-2); }
+.sell-h { margin: 28px 0 6px; font: 600 11px var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--gold); }
+.sell-row .btn { flex: none; }
+.sell-cta { text-align: center; margin-top: 12px; }
+.sell-new { font-style: normal; font-size: 10px; margin-left: 8px; padding: 2px 7px; border-radius: 4px; background: var(--gold); color: #1a1408; letter-spacing: .06em; text-transform: uppercase; }
+.tab .cart-n { margin-left: 6px; }
+@media (max-width: 860px) { .seller { overflow: visible; } .sell-row { flex-wrap: wrap; } .sell-row .meta { flex-basis: calc(100% - 80px); } }

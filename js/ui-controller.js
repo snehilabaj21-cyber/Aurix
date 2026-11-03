@@ -292,7 +292,9 @@
   menuBtn.addEventListener('click', (e) => { e.stopPropagation(); const open = hdr.classList.toggle('menu-open'); menuBtn.setAttribute('aria-expanded', open); });
   hdr.addEventListener('click', (e) => { if (e.target.closest('.top-tools .btn, .exp .btn:not(.caret), .exp .menu-item, .acct .menu-item, #btn-account')) { hdr.classList.remove('menu-open'); menuBtn.setAttribute('aria-expanded', 'false'); } });
 
-  AurixShop.init({ $, toast, openAuth: () => { setAuthMode(false); openModal('auth-modal'); } });
+  const openAuth = () => { setAuthMode(false); openModal('auth-modal'); };
+  AurixShop.init({ $, toast, openAuth });
+  AurixSeller.init({ $, toast, openAuth });
 
   window.aurix = studio; // handy for debugging in the console
 })();
