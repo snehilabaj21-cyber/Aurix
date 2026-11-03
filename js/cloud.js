@@ -38,7 +38,7 @@ const AurixCloud = (() => {
   async function listListings() {
     const { data, error } = await db.from('listings')
       .select('id,user_id,seller_name,title,description,product,price,config,thumbnail,created_at,listing_likes(count)')
-      .order('created_at', { ascending: false }).limit(200);
+      .eq('status', 'published').order('created_at', { ascending: false }).limit(200);
     if (error) throw error;
     return data.map((r) => ({ ...r, likes: r.listing_likes && r.listing_likes[0] ? r.listing_likes[0].count : 0 }));
   }
@@ -70,14 +70,14 @@ const AurixCloud = (() => {
   }
   async function listOrders() {
     const { data, error } = await db.from('orders')
-      .select('id,created_at,order_items(id,listing_ref,title,seller_name,price,config,thumbnail)')
+      .select('id,created_at,order_items(id,listing_ref,title,seller_name,price,config,thumbnail,status)')
       .order('created_at', { ascending: false }).limit(100);
     if (error) throw error;
     return data;
   }
   async function listSales(sellerId) {
     const { data, error } = await db.from('order_items')
-      .select('id,listing_ref,title,price,created_at').eq('seller_id', sellerId).order('created_at', { ascending: false }).limit(200);
+      .select('id,listing_ref,title,price,created_at,status').eq('seller_id', sellerId).order('created_at', { ascending: false }).limit(200);
     if (error) throw error;
     return data;
   }
@@ -85,7 +85,7 @@ const AurixCloud = (() => {
   /* seller dashboard */
   async function listMyListings(userId) {
     const { data, error } = await db.from('listings')
-      .select('id,title,description,price,thumbnail,created_at,listing_likes(count)')
+      .select('id,title,description,price,thumbnail,created_at,status,listing_likes(count)')
       .eq('user_id', userId).order('created_at', { ascending: false }).limit(200);
     if (error) throw error;
     return data.map((r) => ({ ...r, likes: r.listing_likes && r.listing_likes[0] ? r.listing_likes[0].count : 0 }));
@@ -96,5 +96,43 @@ const AurixCloud = (() => {
     if (!data.length) throw new Error('listing not found');
   }
 
-  return { user, onAuth, signIn, signUp, signOut, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike, placeOrder, listOrders, listSales, listMyListings, updateListing };
+  async function setItemStatus(itemId, status) {
+    const { data, error } = await db.from('order_items').update({ status }).eq('id', itemId).select('id');
+    if (error) throw error;
+    if (!data.length) throw new Error('order item not found');
+  }
+  async function likesSince(listingIds, sinceIso) {
+    if (!listingIds.length) return [];
+    const { data, error } = await db.from('listing_likes').select('created_at').in('listing_id', listingIds).gte('created_at', sinceIso).limit(5000);
+    if (error) throw error;
+    return data;
+  }
+
+  /* seller profiles */
+  async function getProfile(userId) {
+    const { data, error } = await db.from('profiles').select('user_id,display_name,bio').eq('user_id', userId).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+  async function saveProfile(userId, displayName, bio) {
+    const { error } = await db.from('profiles').upsert({ user_id: userId, display_name: displayName, bio, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    if (error) throw error;
+  }
+
+  /* reviews: only buyers can post (enforced by the database) */
+  async function listReviews() {
+    const { data, error } = await db.from('reviews').select('id,listing_ref,user_id,author,rating,comment,created_at').order('created_at', { ascending: false }).limit(1000);
+    if (error) throw error;
+    return data;
+  }
+  async function addReview(row) {
+    const { error } = await db.from('reviews').insert(row);
+    if (error) throw error;
+  }
+  async function deleteReview(id) {
+    const { error } = await db.from('reviews').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  return { user, onAuth, signIn, signUp, signOut, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike, placeOrder, listOrders, listSales, listMyListings, updateListing, setItemStatus, likesSince, getProfile, saveProfile, listReviews, addReview, deleteReview };
 })();
