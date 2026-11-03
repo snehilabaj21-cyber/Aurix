@@ -16,7 +16,7 @@ const AurixMarketplace = (() => {
       config: { product: 'nameplate', plateText: 'Maya', plateFont: 'serif', plateStyle: 'pill', metalType: '14k-yellow' } },
     { id: 'f6', title: 'Marquise Ruby Drop', seller_name: 'Marlowe & Co', price: 20, description: 'Marquise ruby pendant framed by a classic pavé halo.',
       config: { product: 'pendant', pendantShape: 'marquise', stoneType: 'ruby', carat: 1.2, metalType: '18k-yellow', halo: 'classic', pendantStone: true } },
-    { id: 'f7', title: 'Block Initials Bracelet Plate', seller_name: 'Noor Atelier', price: 0, description: 'A free starter: bold block initials on a square sterling-silver plate.',
+    { id: 'f7', title: 'Block Initials Bracelet Plate', seller_name: 'Noor Atelier', price: 8, description: 'A starter piece: bold block initials on a square sterling-silver plate.',
       config: { product: 'nameplate', plateText: 'AX', plateFont: 'block', plateStyle: 'square', metalType: 'silver-925' } },
     { id: 'f8', title: 'Pear Double-Claw', seller_name: 'Halden Jewels', price: 30, description: '1.8 ct pear centre stone held by double claws in 18K yellow gold.',
       config: { product: 'ring', gemShape: 'pear', carat: 1.8, metalType: '18k-yellow', headStyle: 'double-claw', profile: 'comfort' } }
@@ -151,8 +151,8 @@ const AurixMarketplace = (() => {
     $('l-price').textContent = money(it.price);
     const owned = AurixShop.owns(it.id);
     $('l-buy').hidden = isMine(it) || owned;
-    $('l-buy').textContent = it.price === 0 ? 'Get it free' : 'Add to cart';
-    $('l-open').hidden = !(it.price === 0 || isMine(it) || owned);
+    $('l-buy').textContent = 'Add to cart';
+    $('l-open').hidden = !(isMine(it) || owned);
     $('l-del').hidden = !isMine(it);
     $('l-like').setAttribute('aria-pressed', liked.has(it.id));
     $('listing-modal').classList.add('open');
@@ -184,7 +184,7 @@ const AurixMarketplace = (() => {
     const { $, studio } = ctx, err = $('pub-err');
     const title = $('pub-title').value.trim(), seller = $('pub-seller').value.trim(), price = parseFloat($('pub-price').value);
     if (!title || !seller) { err.textContent = 'Add a title and a seller name.'; return; }
-    if (!(price >= 0 && price <= 100000)) { err.textContent = 'Price must be between $0 and $100,000.'; return; }
+    if (!(price >= 1 && price <= 100000)) { err.textContent = 'Price must be between $1 and $100,000.'; return; }
     const row = { seller_name: seller, title, description: $('pub-desc').value.trim().slice(0, 600), product: studio.config.product, price: Math.round(price * 100) / 100, config: { ...studio.config }, thumbnail: publishThumb };
     const btn = $('pub-submit'); btn.disabled = true;
     try {
