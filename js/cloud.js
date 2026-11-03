@@ -82,5 +82,19 @@ const AurixCloud = (() => {
     return data;
   }
 
-  return { user, onAuth, signIn, signUp, signOut, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike, placeOrder, listOrders, listSales };
+  /* seller dashboard */
+  async function listMyListings(userId) {
+    const { data, error } = await db.from('listings')
+      .select('id,title,description,price,thumbnail,created_at,listing_likes(count)')
+      .eq('user_id', userId).order('created_at', { ascending: false }).limit(200);
+    if (error) throw error;
+    return data.map((r) => ({ ...r, likes: r.listing_likes && r.listing_likes[0] ? r.listing_likes[0].count : 0 }));
+  }
+  async function updateListing(id, patch) {
+    const { data, error } = await db.from('listings').update(patch).eq('id', id).select('id');
+    if (error) throw error;
+    if (!data.length) throw new Error('listing not found');
+  }
+
+  return { user, onAuth, signIn, signUp, signOut, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike, placeOrder, listOrders, listSales, listMyListings, updateListing };
 })();

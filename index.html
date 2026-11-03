@@ -15,6 +15,7 @@
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" id="tab-studio" aria-selected="true" type="button">Studio</button>
       <button class="tab" role="tab" id="tab-market" aria-selected="false" type="button">Marketplace</button>
+      <button class="tab" role="tab" id="tab-sell" aria-selected="false" type="button" hidden>Sell <span class="cart-n" id="sell-n" hidden>0</span></button>
     </nav>
     <button class="btn back-market" id="btn-back-market" type="button">← Back to marketplace</button>
     <div class="top-tools">
@@ -166,6 +167,10 @@
         <div class="m-grid" id="market-grid"></div>
       </div>
     </section>
+
+    <section class="seller" id="seller" aria-label="Seller dashboard">
+      <div class="m-wrap" id="seller-body"></div>
+    </section>
 </div>
 
 <div class="modal" id="spec-modal" role="dialog" aria-modal="true" aria-label="Specification sheet">
@@ -215,6 +220,17 @@
     <div class="row" style="margin:12px 0 0"><button class="btn primary" type="submit" id="pub-submit">Publish</button><button class="btn" type="button" id="pub-cancel">Cancel</button></div>
   </form>
 </div>
+<div class="modal dlg" id="edit-modal" role="dialog" aria-modal="true" aria-label="Edit listing">
+  <form class="card wide" id="edit-form">
+    <button class="x-close" type="button" id="edit-x" aria-label="Close">&times;</button>
+    <h3>Edit listing</h3>
+    <div class="row"><label for="edit-title">Title</label><input type="text" id="edit-title" maxlength="80" required></div>
+    <div class="row"><label for="edit-price">Price (USD)</label><input type="number" id="edit-price" min="1" max="100000" step="0.01" required></div>
+    <div class="row"><label for="edit-desc">Description</label><textarea id="edit-desc" maxlength="600"></textarea></div>
+    <div class="auth-err" id="edit-err" role="alert"></div>
+    <div class="row" style="margin:12px 0 0"><button class="btn primary" type="submit" id="edit-save">Save changes</button><button class="btn" type="button" id="edit-cancel">Cancel</button></div>
+  </form>
+</div>
 <div class="modal dlg" id="shop-modal" role="dialog" aria-modal="true" aria-label="Cart and orders">
   <div class="card wide shop">
     <button class="x-close" type="button" id="shop-x" aria-label="Close">&times;</button>
@@ -250,7 +266,7 @@
   import { FontLoader } from 'three/addons/loaders/FontLoader.js';
   import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
   window.THREE = { ...THREE_NS, FontLoader, TextGeometry };
-  const scripts = ['gemstones', 'pricing-engine', 'stl-exporter', 'cad-engine', 'ai-designer', 'spec-sheet', 'cloud', 'marketplace', 'shop', 'ui-controller'];
+  const scripts = ['gemstones', 'pricing-engine', 'stl-exporter', 'cad-engine', 'ai-designer', 'spec-sheet', 'cloud', 'marketplace', 'shop', 'seller', 'ui-controller'];
   for (const name of scripts) {
     await new Promise((resolve, reject) => {
       const s = document.createElement('script');

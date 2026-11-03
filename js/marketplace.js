@@ -211,14 +211,17 @@ const AurixMarketplace = (() => {
 
   /* ----- tabs ----- */
   // push = add a browser-history entry, so the Back button returns to the marketplace
+  const HASH = { market: '#marketplace', sell: '#sell' };
+  const viewFromHash = () => location.hash === '#marketplace' ? 'market' : location.hash === '#sell' ? 'sell' : 'studio';
   function show(v, push = true) {
     document.body.dataset.view = v;
     if (v === 'market') document.body.classList.remove('from-market');
-    ctx.$('tab-studio').setAttribute('aria-selected', v === 'studio'); ctx.$('tab-market').setAttribute('aria-selected', v === 'market');
+    ['studio', 'market', 'sell'].forEach((t) => ctx.$('tab-' + t).setAttribute('aria-selected', v === t));
     if (v === 'market') { if (!items.length) load(); else render(); }
-    else setTimeout(() => ctx.studio.resize(), 50);
-    const url = v === 'market' ? '#marketplace' : location.pathname + location.search;
-    if (push && (location.hash === '#marketplace') !== (v === 'market')) history.pushState(null, '', url);
+    else if (v === 'studio') setTimeout(() => ctx.studio.resize(), 50);
+    document.dispatchEvent(new CustomEvent('aurix:view', { detail: v }));
+    const expected = HASH[v] || '';
+    if (push && location.hash !== expected) history.pushState(null, '', expected || location.pathname + location.search);
   }
 
   function init(c) {
@@ -229,6 +232,7 @@ const AurixMarketplace = (() => {
     }));
     $('tab-studio').addEventListener('click', () => show('studio'));
     $('tab-market').addEventListener('click', () => show('market'));
+    $('tab-sell').addEventListener('click', () => show('sell'));
     $('market-q').addEventListener('input', (e) => { view.q = e.target.value; render(); });
     $('market-sort').addEventListener('change', (e) => { view.sort = e.target.value; render(); });
     $('market-mine').addEventListener('click', () => { view.mine = !view.mine; render(); });
@@ -237,7 +241,7 @@ const AurixMarketplace = (() => {
     $('publish-form').addEventListener('submit', submitPublish);
     $('pub-cancel').addEventListener('click', () => $('publish-modal').classList.remove('open'));
     $('btn-back-market').addEventListener('click', () => show('market'));
-    window.addEventListener('popstate', () => show(location.hash === '#marketplace' ? 'market' : 'studio', false));
+    window.addEventListener('popstate', () => show(viewFromHash(), false));
     $('listing-modal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeListing(); });
     $('publish-modal').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
     $('l-x').addEventListener('click', closeListing);
@@ -249,8 +253,9 @@ const AurixMarketplace = (() => {
     $('l-del').addEventListener('click', () => removeListing(current));
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeListing(); $('publish-modal').classList.remove('open'); } });
     AurixCloud.onAuth(() => { if (items.length && document.body.dataset.view === 'market') load(); });
-    show(location.hash === '#marketplace' ? 'market' : 'studio', false);
+    document.addEventListener('aurix:listings-changed', () => { items = []; });
+    show(viewFromHash(), false);
   }
 
-  return { init, getItem, ensureLoaded, openConfig, isMine: (it) => isMine(it) };
+  return { init, getItem, ensureLoaded, openConfig, show, isMine: (it) => isMine(it) };
 })();
