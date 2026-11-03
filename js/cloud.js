@@ -1,7 +1,7 @@
 /* Aurix — Supabase accounts + saved designs. The publishable key is safe to ship; access is enforced by row-level security. */
 const AurixCloud = (() => {
-  const SUPABASE_URL = 'https://itvlaanarwjhgqocnfby.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_kHz3St_2QQW9Fpo1cpKojQ_nK9uj4RQ';
+  const SUPABASE_URL = 'https://pmabhsalknzgnxcklfva.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_Qa50xuPDNN01uWqQfmxQ5w_h5ddIHmW';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const user = () => db.auth.getUser().then(({ data }) => data.user);
