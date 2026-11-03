@@ -1,3 +1,8 @@
 # Minimal config so the Supabase GitHub integration recognises this directory.
 # Run `supabase init` locally to generate the full file if you use the CLI.
 project_id = "aurix"
+
+[auth]
+# Confirmation and password-reset emails link back to the live site.
+site_url = "https://aurix-seven-vert.vercel.app"
+additional_redirect_urls = ["https://aurix-seven-vert.vercel.app", "http://localhost:8080"]
