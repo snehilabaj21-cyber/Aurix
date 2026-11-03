@@ -17,20 +17,33 @@
       <button class="tab" role="tab" id="tab-market" aria-selected="false" type="button">Marketplace</button>
     </nav>
     <button class="btn back-market" id="btn-back-market" type="button">← Back to marketplace</button>
-    <div class="top-actions">
-    <button class="btn" id="btn-designs" hidden>My designs</button>
-    <button class="btn" id="btn-orders" hidden>Orders</button>
-    <button class="btn" id="btn-cart" aria-label="Open cart">Cart <span class="cart-n" id="cart-n">0</span></button>
-    <button class="btn" id="btn-save">Save design</button>
-    <button class="btn" id="btn-sell" title="List this design in the marketplace">Sell this design</button>
-    <button class="btn" id="btn-store" aria-pressed="false">Storefront view</button>
-    <button class="btn" id="btn-spec">Spec sheet</button>
-    <button class="btn" id="btn-photo">Studio photo</button>
-    <button class="btn" id="btn-stl-true" title="Exact size, for printing the finished ring directly">STL true size</button>
-    <button class="btn primary" id="btn-stl" title="Casting master, enlarged for metal shrinkage">Export STL</button>
-    <span class="who" id="who"></span>
-    <button class="btn primary" id="btn-account">Sign in</button>
+    <div class="top-tools">
+      <button class="btn" id="btn-save">Save design</button>
+      <button class="btn" id="btn-sell" title="List this design in the marketplace">Sell this design</button>
     </div>
+    <div class="spacer"></div>
+    <div class="top-right">
+      <div class="split exp" id="exp">
+        <button class="btn primary" id="btn-stl" title="Casting master, enlarged for metal shrinkage">Export STL</button>
+        <button class="btn primary caret" id="exp-more" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="exp-menu" aria-label="More export options">▾</button>
+        <div class="menu" id="exp-menu" role="menu">
+          <button class="menu-item" role="menuitem" id="btn-stl-true" title="Exact size, for printing the finished ring directly">STL true size</button>
+          <button class="menu-item" role="menuitem" id="btn-spec">Spec sheet</button>
+          <button class="menu-item" role="menuitem" id="btn-photo">Studio photo</button>
+        </div>
+      </div>
+      <button class="btn" id="btn-cart" aria-label="Open cart">Cart <span class="cart-n" id="cart-n">0</span></button>
+      <button class="btn primary" id="btn-account">Sign in</button>
+      <div class="acct" id="acct" hidden>
+        <button class="btn" id="acct-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="acct-menu"><span class="who" id="who"></span> ▾</button>
+        <div class="menu" id="acct-menu" role="menu">
+          <button class="menu-item" role="menuitem" id="btn-designs">My designs</button>
+          <button class="menu-item" role="menuitem" id="btn-orders">Orders</button>
+          <button class="menu-item" role="menuitem" id="btn-signout">Sign out</button>
+        </div>
+      </div>
+    </div>
+    <button class="btn menu-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="exp" aria-label="Menu">☰</button>
   </header>
 
   <div class="main">
@@ -131,7 +144,7 @@
         <div class="store-cta"><button class="btn primary" id="btn-bag">Add to bag</button><button class="btn" id="btn-share">Copy link</button></div>
       </div>
 
-      <div class="view-tools"><span>Drag to rotate · scroll to zoom</span><button class="btn only-ring" id="btn-focus" aria-pressed="false">Focus stone</button><button class="btn" id="btn-rotate" aria-pressed="true">Auto-rotate: on</button></div>
+      <div class="view-tools"><span>Drag to rotate · scroll to zoom</span><button class="btn" id="btn-store" aria-pressed="false">Storefront view</button><button class="btn only-ring" id="btn-focus" aria-pressed="false">Focus stone</button><button class="btn" id="btn-rotate" aria-pressed="true">Auto-rotate: on</button></div>
     </main>
   </div>
 

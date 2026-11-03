@@ -218,9 +218,10 @@
   AurixCloud.onAuth((u) => {
     me = u; currentDesignId = null;
     $('who').textContent = u ? u.email : '';
-    $('btn-account').textContent = u ? 'Sign out' : 'Sign in';
+    $('btn-account').hidden = !!u; $('acct').hidden = !u;
     $('btn-designs').hidden = !u;
   });
+  $('btn-signout').addEventListener('click', () => AurixCloud.signOut().then(() => toast('Signed out')));
   AurixCloud.user().then((u) => { me = u; });
   $('btn-account').addEventListener('click', () => {
     if (me) { AurixCloud.signOut().then(() => toast('Signed out')); return; }
@@ -277,6 +278,19 @@
   $('designs-close').addEventListener('click', () => closeModal('designs-modal'));
 
   AurixMarketplace.init({ studio, $, toast, applyConfig, getUser: () => me, openAuth: () => { setAuthMode(false); openModal('auth-modal'); } });
+
+  /* ----- header dropdowns (Export, account) and the phone menu ----- */
+  const dropdowns = [['exp-more', 'exp-menu'], ['acct-btn', 'acct-menu']].map(([bid, mid]) => ({ b: $(bid), m: $(mid) }));
+  const closeMenus = () => dropdowns.forEach(({ b, m }) => { m.classList.remove('open'); b.setAttribute('aria-expanded', 'false'); });
+  dropdowns.forEach(({ b, m }) => b.addEventListener('click', (e) => {
+    e.stopPropagation(); const open = !m.classList.contains('open'); closeMenus();
+    m.classList.toggle('open', open); b.setAttribute('aria-expanded', open);
+  }));
+  document.addEventListener('click', () => closeMenus());
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const o = dropdowns.find((d) => d.m.classList.contains('open')); closeMenus(); o && o.b.focus(); } });
+  const hdr = document.querySelector('header.top'), menuBtn = $('menu-btn');
+  menuBtn.addEventListener('click', (e) => { e.stopPropagation(); const open = hdr.classList.toggle('menu-open'); menuBtn.setAttribute('aria-expanded', open); });
+  hdr.addEventListener('click', (e) => { if (e.target.closest('.top-tools .btn, .exp .btn:not(.caret), .exp .menu-item, .acct .menu-item, #btn-account')) { hdr.classList.remove('menu-open'); menuBtn.setAttribute('aria-expanded', 'false'); } });
 
   AurixShop.init({ $, toast, openAuth: () => { setAuthMode(false); openModal('auth-modal'); } });
 
