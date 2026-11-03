@@ -44,11 +44,19 @@ const AurixMarketplace = (() => {
       items = rows.concat(FEATURED);
       notice.hidden = true;
     } catch (e) {
-      mode = 'local';
-      liked = new Set(readLocal(LIKES_KEY, []));
-      items = readLocal(LOCAL_KEY, []).concat(FEATURED);
+      // 42P01 / PGRST205 = the listings table doesn't exist; anything else (network, outage) must not switch to the browser-only demo
+      if (e && (e.code === '42P01' || e.code === 'PGRST205')) {
+        mode = 'local';
+        liked = new Set(readLocal(LIKES_KEY, []));
+        items = readLocal(LOCAL_KEY, []).concat(FEATURED);
+        notice.textContent = 'Demo mode: the marketplace database isn’t set up yet, so listings are saved in this browser only. Run supabase/migrations/20261031000000_marketplace.sql to make them public.';
+      } else {
+        mode = 'cloud';
+        liked = new Set(readLocal(LIKES_KEY, []));
+        items = FEATURED.slice();
+        notice.textContent = 'Couldn’t reach the marketplace right now, so only featured designs are shown. Check your connection and reopen this tab.';
+      }
       notice.hidden = false;
-      notice.textContent = 'Demo mode: the marketplace database isn’t set up yet, so listings are saved in this browser only. Run supabase/migrations/20261031000000_marketplace.sql to make them public.';
     }
     render();
     renderFeaturedThumbs();
