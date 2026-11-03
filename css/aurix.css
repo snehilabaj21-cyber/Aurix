@@ -293,3 +293,24 @@ body[data-view=sell] .seller { display: block; }
 .sell-new { font-style: normal; font-size: 10px; margin-left: 8px; padding: 2px 7px; border-radius: 4px; background: var(--gold); color: #1a1408; letter-spacing: .06em; text-transform: uppercase; }
 .tab .cart-n { margin-left: 6px; }
 @media (max-width: 860px) { .seller { overflow: visible; } .sell-row { flex-wrap: wrap; } .sell-row .meta { flex-basis: calc(100% - 80px); } }
+
+/* seller dashboard: chart, profile card, draft tag */
+.sell-chart, .sell-profile { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 18px; }
+.sell-chart-h { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.sell-chart-h .shop-tabs { margin: 0; border: 0; }
+.sell-chart svg { display: block; width: 100%; max-width: 640px; height: auto; margin: 0 auto; }
+.sell-bar { fill: var(--gold); } .sell-chart text { fill: var(--muted); font-size: 10px; } .sell-axis { font-size: 9px !important; }
+.sell-profile .row { margin-bottom: 10px; } .sell-profile a.btn { text-decoration: none; display: inline-block; }
+.sell-draft { background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); }
+
+/* reviews, ratings and seller pages */
+.linklike { background: none; border: 0; padding: 0; cursor: pointer; color: var(--gold-2); text-decoration: underline; text-underline-offset: 2px; }
+.linklike:hover { color: var(--text); }
+.m-rate { color: var(--gold-2); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; } .m-rate i { color: var(--muted); font-style: normal; }
+.l-reviews { margin-top: 18px; } .l-reviews h4 { margin: 0 0 8px; font: 600 11px var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--gold); }
+.rv-stars { color: var(--gold-2); letter-spacing: 1px; } .rv-sum { margin-bottom: 8px; }
+.rv { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 12px; } .rv p { margin: 4px 0 0; color: var(--text); }
+.rv-form { margin-top: 12px; display: grid; gap: 8px; } .rv-form select, .rv-form textarea { width: 100%; }
+.m-profile { text-align: center; margin-bottom: 24px; } .m-profile > .btn { display: block; margin: 0 auto 18px; }
+.m-profile h2 { margin: 8px 0 6px; font: 600 40px/1.1 var(--serif); color: var(--gold-2); } .m-profile p { margin: 4px auto; max-width: 560px; color: var(--text); } .m-profile .m-sub { color: var(--muted); }
+.m-av-lg { width: 64px; height: 64px; font-size: 26px; margin: 0 auto; }

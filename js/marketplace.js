@@ -22,7 +22,7 @@ const AurixMarketplace = (() => {
       config: { product: 'ring', gemShape: 'pear', carat: 1.8, metalType: '18k-yellow', headStyle: 'double-claw', profile: 'comfort' } }
   ].map((f) => ({ ...f, user_id: 'aurix', featured: true, likes: 0, created_at: '2026-10-01T00:00:00Z', thumbnail: null }));
 
-  let ctx, mode = 'cloud', items = [], liked = new Set(), thumbs = {}, view = { q: '', cat: 'all', sort: 'new', mine: false }, current = null, publishThumb = null;
+  let ctx, mode = 'cloud', items = [], liked = new Set(), thumbs = {}, view = { q: '', cat: 'all', sort: 'new', mine: false, seller: null }, current = null, publishThumb = null, reviews = [], sellerProfile = null;
 
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const money = (n) => Number(n) === 0 ? 'Free' : '$' + (Number.isInteger(Number(n)) ? Number(n) : Number(n).toFixed(2));
@@ -37,11 +37,13 @@ const AurixMarketplace = (() => {
   /* ----- data ----- */
   async function load() {
     const notice = ctx.$('market-notice');
+    reviews = [];
     try {
       const rows = await AurixCloud.listListings();
       mode = 'cloud';
       liked = new Set((me() ? await AurixCloud.myLikes().catch(() => []) : []).concat(readLocal(LIKES_KEY, [])));
       items = rows.concat(FEATURED);
+      reviews = await AurixCloud.listReviews().catch(() => []);
       notice.hidden = true;
     } catch (e) {
       // 42P01 / PGRST205 = the listings table doesn't exist; anything else (network, outage) must not switch to the browser-only demo
@@ -93,7 +95,7 @@ const AurixMarketplace = (() => {
   function visible() {
     const q = view.q.trim().toLowerCase();
     let list = items.filter((it) => (view.cat === 'all' || it.product === view.cat || it.config.product === view.cat) &&
-      (!view.mine || isMine(it)) && (!q || (it.title + ' ' + it.seller_name + ' ' + (it.description || '')).toLowerCase().includes(q)));
+      (!view.mine || isMine(it)) && (!view.seller || it.user_id === view.seller) && (!q || (it.title + ' ' + it.seller_name + ' ' + (it.description || '')).toLowerCase().includes(q)));
     const by = { new: (a, b) => (b.created_at > a.created_at ? 1 : -1), popular: (a, b) => b.likes - a.likes, low: (a, b) => a.price - b.price, high: (a, b) => b.price - a.price };
     return list.sort(by[view.sort]);
   }
@@ -101,6 +103,7 @@ const AurixMarketplace = (() => {
 
   function render() {
     const { $ } = ctx, list = visible(), grid = $('market-grid');
+    renderProfile();
     $('market-count').textContent = items.length.toLocaleString() + ' jewelry designs from independent makers';
     document.querySelectorAll('#market-cats .chip').forEach((b) => b.setAttribute('aria-pressed', b.dataset.val === view.cat));
     $('market-mine').setAttribute('aria-pressed', view.mine);
@@ -112,7 +115,7 @@ const AurixMarketplace = (() => {
         '<span class="m-over"><b>' + esc(it.title) + '</b><i>' + esc(PRODUCTS[it.config.product] || '') + '</i></span></button>' +
         '<div class="m-foot"><span class="m-av" aria-hidden="true">' + esc((it.seller_name || '?').charAt(0).toUpperCase()) + '</span>' +
         '<span class="m-who">' + esc(it.seller_name) + (it.featured ? '<em>Featured</em>' : '') + '</span>' +
-        '<span class="m-price">' + money(it.price) + '</span>' +
+        rateHtml(it.id) + '<span class="m-price">' + money(it.price) + '</span>' +
         '<button class="m-like" type="button" aria-pressed="' + liked.has(it.id) + '" aria-label="Like"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.5-9.2C1.2 8.6 3 5 6.4 5c2 0 3.6 1.1 5.6 3.2C14 6.1 15.6 5 17.6 5 21 5 22.8 8.6 21.5 11.8 19.5 16.4 12 21 12 21z"/></svg><span>' + likeCount(it) + '</span></button></div>';
       c.querySelector('.m-img').addEventListener('click', () => openListing(it));
       c.querySelector('.m-like').addEventListener('click', (e) => toggleLike(it, e.currentTarget));
@@ -133,6 +136,57 @@ const AurixMarketplace = (() => {
     if (current === it) ctx.$('l-like').setAttribute('aria-pressed', on);
   }
 
+  /* ----- ratings and reviews (only buyers can post: enforced by the database) ----- */
+  const stars = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
+  const reviewsOf = (ref) => reviews.filter((r) => r.listing_ref === ref);
+  const ratingOf = (ref) => { const l = reviewsOf(ref); return { n: l.length, avg: l.length ? l.reduce((a, r) => a + r.rating, 0) / l.length : 0 }; };
+  const rateHtml = (ref) => { const r = ratingOf(ref); return r.n ? '<span class="m-rate" title="' + r.avg.toFixed(1) + ' out of 5">★ ' + r.avg.toFixed(1) + ' <i>(' + r.n + ')</i></span>' : ''; };
+
+  function renderReviews(it) {
+    const box = ctx.$('l-reviews');
+    if (mode !== 'cloud') { box.innerHTML = ''; return; }
+    const list = reviewsOf(it.id), r = ratingOf(it.id), user = me(), mine = user && list.find((x) => x.user_id === user.id);
+    let html = '<h4>Reviews</h4>' + (r.n ? '<div class="rv-sum"><b class="rv-stars">' + stars(Math.round(r.avg)) + '</b> ' + r.avg.toFixed(1) + ' · ' + r.n + (r.n === 1 ? ' review' : ' reviews') + '</div>' : '<p class="shop-muted">No reviews yet.</p>');
+    html += list.slice(0, 5).map((x) => '<div class="rv"><div><b class="rv-stars">' + stars(x.rating) + '</b> <span class="shop-muted">' + esc(x.author) + ' · ' + new Date(x.created_at).toLocaleDateString() + '</span>' +
+      (user && x.user_id === user.id ? ' <button class="linklike" type="button" data-act="rv-del" data-id="' + esc(x.id) + '">Delete</button>' : '') + '</div>' + (x.comment ? '<p>' + esc(x.comment) + '</p>' : '') + '</div>').join('');
+    if (!isMine(it) && !mine) {
+      html += user && AurixShop.owns(it.id)
+        ? '<div class="rv-form"><label for="rv-rating">Your rating</label><select id="rv-rating"><option value="5">★★★★★ Excellent</option><option value="4">★★★★ Good</option><option value="3">★★★ Okay</option><option value="2">★★ Poor</option><option value="1">★ Bad</option></select>' +
+          '<textarea id="rv-text" maxlength="500" placeholder="How was the design?"></textarea><div class="auth-err" id="rv-err" role="alert"></div><button class="btn primary" type="button" data-act="rv-add">Post review</button></div>'
+        : '<p class="shop-muted">Order this design to leave a review.</p>';
+    }
+    box.innerHTML = html;
+  }
+  async function reloadReviews() { reviews = await AurixCloud.listReviews().catch(() => reviews); if (current) renderReviews(current); render(); }
+  async function reviewClick(e) {
+    const b = e.target.closest('[data-act]'); if (!b || !current) return;
+    if (b.dataset.act === 'rv-add') {
+      const err = ctx.$('rv-err'), user = me(); err.textContent = ''; b.disabled = true;
+      try {
+        await AurixCloud.addReview({ listing_ref: current.id, author: (user.email || 'buyer').split('@')[0].slice(0, 40), rating: +ctx.$('rv-rating').value, comment: ctx.$('rv-text').value.trim().slice(0, 500) });
+        ctx.toast('Review posted'); await reloadReviews();
+      } catch (ex) { err.textContent = ex.code === '42501' ? 'Only people who ordered this design can review it.' : 'Couldn’t post: ' + ex.message; b.disabled = false; }
+    } else if (b.dataset.act === 'rv-del') {
+      try { await AurixCloud.deleteReview(b.dataset.id); ctx.toast('Review deleted'); await reloadReviews(); } catch (ex) { ctx.toast('Couldn’t delete: ' + ex.message); }
+    }
+  }
+
+  /* ----- public seller page: the marketplace filtered to one seller ----- */
+  function loadSellerProfile() {
+    sellerProfile = null; const id = view.seller;
+    if (!ctx || !id) return;
+    AurixCloud.getProfile(id).then((p) => { if (view.seller === id) { sellerProfile = p; render(); } }).catch(() => {});
+  }
+  function renderProfile() {
+    const box = ctx.$('market-profile'), hero = ctx.$('market-hero');
+    box.hidden = !view.seller; hero.hidden = !!view.seller;
+    if (!view.seller) return;
+    const theirs = items.filter((i) => i.user_id === view.seller), name = (sellerProfile && sellerProfile.display_name) || (theirs[0] && theirs[0].seller_name) || 'Seller';
+    box.innerHTML = '<button class="btn" type="button" data-act="all">← All designs</button><div class="m-av m-av-lg" aria-hidden="true">' + esc(name.charAt(0).toUpperCase()) + '</div><h2>' + esc(name) + '</h2>' +
+      (sellerProfile && sellerProfile.bio ? '<p>' + esc(sellerProfile.bio) + '</p>' : '') + '<p class="m-sub">' + theirs.length + (theirs.length === 1 ? ' design' : ' designs') + ' for sale</p>';
+  }
+  function openSeller(id) { view.seller = id; view.mine = false; loadSellerProfile(); show('market'); }
+
   /* ----- listing detail ----- */
   function describe(cfg) {
     const c = { ...CADStudio.DEFAULTS, ...cfg }, rows = [['Type', PRODUCTS[c.product]], ['Metal', PricingEngine.ALLOYS[c.metalType].label]];
@@ -145,7 +199,9 @@ const AurixMarketplace = (() => {
   function openListing(it) {
     const { $ } = ctx; current = it;
     $('l-img').src = imgOf(it); $('l-img').alt = it.title;
-    $('l-title').textContent = it.title; $('l-seller').textContent = 'by ' + it.seller_name;
+    $('l-title').textContent = it.title;
+    $('l-seller').innerHTML = 'by ' + (it.featured || !it.user_id || it.user_id === 'local' ? esc(it.seller_name) : '<button class="linklike" type="button" data-seller="' + esc(it.user_id) + '">' + esc(it.seller_name) + '</button>');
+    renderReviews(it);
     $('l-desc').textContent = it.description || 'No description.';
     $('l-specs').innerHTML = describe(it.config).map(([k, v]) => '<tr><td>' + esc(k) + '</td><td>' + esc(v) + '</td></tr>').join('');
     $('l-price').textContent = money(it.price);
@@ -176,6 +232,7 @@ const AurixMarketplace = (() => {
     const base = c.product === 'nameplate' ? ((c.plateText || 'Name') + ' name plate') : c.product === 'pendant' ? (GemstoneLibrary.SHAPES[c.pendantShape].label + ' pendant') : (GemstoneLibrary.SHAPES[c.gemShape].label + ' ' + c.carat + ' ct ring');
     $('pub-title').value = base; $('pub-desc').value = ''; $('pub-price').value = Math.round(PricingEngine.calculateCostBreakdown(c, studio.metrics).retail * 0.02) || 15;
     $('pub-err').textContent = '';
+    $('pub-draft').hidden = mode !== 'cloud';
     $('pub-seller').value = me() ? me().email.split('@')[0].slice(0, 40) : 'You';
     $('publish-modal').classList.add('open'); $('pub-title').focus();
   }
@@ -185,20 +242,24 @@ const AurixMarketplace = (() => {
     const title = $('pub-title').value.trim(), seller = $('pub-seller').value.trim(), price = parseFloat($('pub-price').value);
     if (!title || !seller) { err.textContent = 'Add a title and a seller name.'; return; }
     if (!(price >= 1 && price <= 100000)) { err.textContent = 'Price must be between $1 and $100,000.'; return; }
-    const row = { seller_name: seller, title, description: $('pub-desc').value.trim().slice(0, 600), product: studio.config.product, price: Math.round(price * 100) / 100, config: { ...studio.config }, thumbnail: publishThumb };
-    const btn = $('pub-submit'); btn.disabled = true;
+    const draft = mode === 'cloud' && e.submitter && e.submitter.id === 'pub-draft';
+    const row = { seller_name: seller, title, status: draft ? 'draft' : 'published', description: $('pub-desc').value.trim().slice(0, 600), product: studio.config.product, price: Math.round(price * 100) / 100, config: { ...studio.config }, thumbnail: publishThumb };
+    const btns = [$('pub-submit'), $('pub-draft')]; btns.forEach((b) => { b.disabled = true; });
     try {
       if (mode === 'cloud') await AurixCloud.publishListing(row);
       else {
+        delete row.status;
         const mine = readLocal(LOCAL_KEY, []);
         mine.unshift({ ...row, id: 'l' + Date.now(), user_id: 'local', likes: 0, created_at: new Date().toISOString() });
         if (!writeLocal(LOCAL_KEY, mine)) throw new Error('browser storage is full');
       }
-      $('publish-modal').classList.remove('open'); ctx.toast('Published to the marketplace');
+      $('publish-modal').classList.remove('open');
+      if (draft) { ctx.toast('Saved as a draft. Publish it from your Sell tab.'); document.dispatchEvent(new CustomEvent('aurix:listings-changed')); show('sell'); return; }
+      ctx.toast('Published to the marketplace');
       view.mine = false; view.cat = 'all'; view.sort = 'new'; ctx.$('market-sort').value = 'new';
       show('market'); await load();
     } catch (ex) { err.textContent = 'Couldn’t publish: ' + ex.message; }
-    btn.disabled = false;
+    btns.forEach((b) => { b.disabled = false; });
   }
   async function removeListing(it) {
     if (!confirm('Remove “' + it.title + '” from the marketplace?')) return;
@@ -212,7 +273,12 @@ const AurixMarketplace = (() => {
   /* ----- tabs ----- */
   // push = add a browser-history entry, so the Back button returns to the marketplace
   const HASH = { market: '#marketplace', sell: '#sell' };
-  const viewFromHash = () => location.hash === '#marketplace' ? 'market' : location.hash === '#sell' ? 'sell' : 'studio';
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const viewFromHash = () => {
+    const m = /^#seller\/(.+)$/.exec(location.hash), id = m && UUID.test(m[1]) ? m[1] : null;
+    if (id !== view.seller) { view.seller = id; loadSellerProfile(); }
+    return id || location.hash === '#marketplace' ? 'market' : location.hash === '#sell' ? 'sell' : 'studio';
+  };
   function show(v, push = true) {
     document.body.dataset.view = v;
     if (v === 'market') document.body.classList.remove('from-market');
@@ -220,7 +286,7 @@ const AurixMarketplace = (() => {
     if (v === 'market') { if (!items.length) load(); else render(); }
     else if (v === 'studio') setTimeout(() => ctx.studio.resize(), 50);
     document.dispatchEvent(new CustomEvent('aurix:view', { detail: v }));
-    const expected = HASH[v] || '';
+    const expected = v === 'market' && view.seller ? '#seller/' + view.seller : HASH[v] || '';
     if (push && location.hash !== expected) history.pushState(null, '', expected || location.pathname + location.search);
   }
 
@@ -231,7 +297,7 @@ const AurixMarketplace = (() => {
       b.addEventListener('click', () => { view.cat = val; render(); }); $(id).appendChild(b);
     }));
     $('tab-studio').addEventListener('click', () => show('studio'));
-    $('tab-market').addEventListener('click', () => show('market'));
+    $('tab-market').addEventListener('click', () => { view.seller = null; sellerProfile = null; show('market'); });
     $('tab-sell').addEventListener('click', () => show('sell'));
     $('market-q').addEventListener('input', (e) => { view.q = e.target.value; render(); });
     $('market-sort').addEventListener('change', (e) => { view.sort = e.target.value; render(); });
@@ -245,6 +311,9 @@ const AurixMarketplace = (() => {
     $('listing-modal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeListing(); });
     $('publish-modal').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
     $('l-x').addEventListener('click', closeListing);
+    $('l-reviews').addEventListener('click', reviewClick);
+    $('l-seller').addEventListener('click', (e) => { const s = e.target.closest('[data-seller]'); if (s) { closeListing(); openSeller(s.dataset.seller); } });
+    $('market-profile').addEventListener('click', (e) => { if (e.target.closest('[data-act=all]')) { view.seller = null; sellerProfile = null; show('market'); } });
     $('pub-x').addEventListener('click', () => $('publish-modal').classList.remove('open'));
     $('l-close').addEventListener('click', closeListing);
     $('l-like').addEventListener('click', () => { const card = [...document.querySelectorAll('.m-card')].find((el) => el.querySelector('[data-thumb="' + current.id + '"]')); if (card) toggleLike(current, card.querySelector('.m-like')); });
@@ -257,5 +326,5 @@ const AurixMarketplace = (() => {
     show(viewFromHash(), false);
   }
 
-  return { init, getItem, ensureLoaded, openConfig, show, isMine: (it) => isMine(it) };
+  return { init, getItem, ensureLoaded, openConfig, show, openListing, openSeller, isMine: (it) => isMine(it) };
 })();

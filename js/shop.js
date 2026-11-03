@@ -94,8 +94,8 @@ const AurixShop = (() => {
         body('<h3>Orders</h3>' + tabs + (orders.length ? orders.map((o, oi) => {
           const t = total(o.order_items);
           return '<div class="shop-order"><div class="shop-order-h"><span><b>Order ' + orderNo(o.id) + '</b> · ' + day(o.created_at) + '</span><b>' + money(t) + '</b></div>' +
-            o.order_items.map((i, ii) => '<div class="shop-row">' + thumb(i.thumbnail, i.title) + '<div class="meta"><b>' + esc(i.title) + '</b><span>by ' + esc(i.seller_name) + '</span></div>' +
-              '<div class="shop-price">' + money(i.price) + '</div><button class="btn" data-act="open-order" data-o="' + oi + '" data-i="' + ii + '">Open in studio</button></div>').join('') + '</div>';
+            o.order_items.map((i, ii) => '<div class="shop-row">' + thumb(i.thumbnail, i.title) + '<div class="meta"><b>' + esc(i.title) + '</b><span>by ' + esc(i.seller_name) + ' · ' + (i.status === 'delivered' ? 'Delivered' : 'Waiting for the seller') + '</span></div>' +
+              '<div class="shop-price">' + money(i.price) + '</div><button class="btn" data-act="review" data-ref="' + esc(i.listing_ref) + '">Review</button><button class="btn" data-act="open-order" data-o="' + oi + '" data-i="' + ii + '">Open in studio</button></div>').join('') + '</div>';
         }).join('') : '<p class="m-empty">You haven’t ordered anything yet.</p>') + '<div class="row shop-actions"><button class="btn" data-act="close">Close</button></div>');
       } else {
         const sales = await AurixCloud.listSales(me.id);
@@ -132,6 +132,7 @@ const AurixShop = (() => {
       else if (act === 'orders') ordersView('orders');
       else if (act === 'tab') ordersView(b.dataset.tab);
       else if (act === 'open-cfg') { close(); market().openConfig(lastRows[+b.dataset.i].config); }
+      else if (act === 'review') { const it = market().getItem(b.dataset.ref); if (it) { close(); market().show('market'); market().openListing(it); } else ctx.toast('That design is no longer in the marketplace'); }
       else if (act === 'open-order') { close(); market().openConfig(orders[+b.dataset.o].order_items[+b.dataset.i].config); }
     });
     AurixCloud.onAuth((u) => { me = u; ctx.$('btn-orders').hidden = !u; refreshOwned(); });
