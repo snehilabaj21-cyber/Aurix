@@ -149,13 +149,21 @@ const AurixMarketplace = (() => {
     $('l-desc').textContent = it.description || 'No description.';
     $('l-specs').innerHTML = describe(it.config).map(([k, v]) => '<tr><td>' + esc(k) + '</td><td>' + esc(v) + '</td></tr>').join('');
     $('l-price').textContent = money(it.price);
-    $('l-buy').textContent = it.price === 0 ? 'Get it free' : 'Buy design';
-    $('l-open').hidden = !(it.price === 0 || isMine(it));
+    const owned = AurixShop.owns(it.id);
+    $('l-buy').hidden = isMine(it) || owned;
+    $('l-buy').textContent = it.price === 0 ? 'Get it free' : 'Add to cart';
+    $('l-open').hidden = !(it.price === 0 || isMine(it) || owned);
     $('l-del').hidden = !isMine(it);
     $('l-like').setAttribute('aria-pressed', liked.has(it.id));
     $('listing-modal').classList.add('open');
   }
   const closeListing = () => { ctx.$('listing-modal').classList.remove('open'); current = null; };
+  function openConfig(config) {
+    const cfg = { ...CADStudio.DEFAULTS, ...config };
+    closeListing(); show('studio'); document.body.classList.add('from-market'); ctx.applyConfig(cfg); ctx.toast('Opened in the studio');
+  }
+  const getItem = (ref) => { const it = items.find((i) => i.id === ref); return it ? { ...it, thumbnail: imgOf(it) } : null; };
+  const ensureLoaded = () => items.length ? Promise.resolve() : load();
 
   /* ----- publish ----- */
   function openPublish() {
@@ -236,13 +244,13 @@ const AurixMarketplace = (() => {
     $('pub-x').addEventListener('click', () => $('publish-modal').classList.remove('open'));
     $('l-close').addEventListener('click', closeListing);
     $('l-like').addEventListener('click', () => { const card = [...document.querySelectorAll('.m-card')].find((el) => el.querySelector('[data-thumb="' + current.id + '"]')); if (card) toggleLike(current, card.querySelector('.m-like')); });
-    $('l-buy').addEventListener('click', () => ctx.toast(current.price === 0 ? 'Free designs open straight in the studio' : 'Checkout isn’t connected yet — payments are coming soon'));
-    $('l-open').addEventListener('click', () => { const cfg = { ...CADStudio.DEFAULTS, ...current.config }; closeListing(); show('studio'); document.body.classList.add('from-market'); ctx.applyConfig(cfg); ctx.toast('Opened in the studio'); });
+    $('l-buy').addEventListener('click', () => { const it = current; closeListing(); AurixShop.add(it); });
+    $('l-open').addEventListener('click', () => openConfig(current.config));
     $('l-del').addEventListener('click', () => removeListing(current));
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeListing(); $('publish-modal').classList.remove('open'); } });
     AurixCloud.onAuth(() => { if (items.length && document.body.dataset.view === 'market') load(); });
     show(location.hash === '#marketplace' ? 'market' : 'studio', false);
   }
 
-  return { init };
+  return { init, getItem, ensureLoaded, openConfig, isMine: (it) => isMine(it) };
 })();

@@ -278,5 +278,7 @@
 
   AurixMarketplace.init({ studio, $, toast, applyConfig, getUser: () => me, openAuth: () => { setAuthMode(false); openModal('auth-modal'); } });
 
+  AurixShop.init({ $, toast, openAuth: () => { setAuthMode(false); openModal('auth-modal'); } });
+
   window.aurix = studio; // handy for debugging in the console
 })();

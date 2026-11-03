@@ -19,6 +19,8 @@
     <button class="btn back-market" id="btn-back-market" type="button">← Back to marketplace</button>
     <div class="spacer"></div>
     <button class="btn" id="btn-designs" hidden>My designs</button>
+    <button class="btn" id="btn-orders" hidden>Orders</button>
+    <button class="btn" id="btn-cart" aria-label="Open cart">Cart <span class="cart-n" id="cart-n">0</span></button>
     <button class="btn" id="btn-save">Save design</button>
     <button class="btn" id="btn-sell" title="List this design in the marketplace">Sell this design</button>
     <button class="btn" id="btn-store" aria-pressed="false">Storefront view</button>
@@ -199,6 +201,12 @@
     <div class="row" style="margin:12px 0 0"><button class="btn primary" type="submit" id="pub-submit">Publish</button><button class="btn" type="button" id="pub-cancel">Cancel</button></div>
   </form>
 </div>
+<div class="modal dlg" id="shop-modal" role="dialog" aria-modal="true" aria-label="Cart and orders">
+  <div class="card wide shop">
+    <button class="x-close" type="button" id="shop-x" aria-label="Close">&times;</button>
+    <div id="shop-body"></div>
+  </div>
+</div>
 <div class="modal dlg" id="listing-modal" role="dialog" aria-modal="true" aria-label="Listing">
   <div class="card listing">
     <button class="x-close" type="button" id="l-x" aria-label="Close">&times;</button>
@@ -208,7 +216,7 @@
       <p id="l-desc"></p>
       <table class="l-specs" id="l-specs"></table>
       <div class="l-price" id="l-price"></div>
-      <div class="row l-actions"><button class="btn primary" type="button" id="l-buy">Buy design</button><button class="btn" type="button" id="l-open">Open in studio</button>
+      <div class="row l-actions"><button class="btn primary" type="button" id="l-buy">Add to cart</button><button class="btn" type="button" id="l-open">Open in studio</button>
         <button class="m-like" type="button" id="l-like" aria-pressed="false" aria-label="Like"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.5-9.2C1.2 8.6 3 5 6.4 5c2 0 3.6 1.1 5.6 3.2C14 6.1 15.6 5 17.6 5 21 5 22.8 8.6 21.5 11.8 19.5 16.4 12 21 12 21z"/></svg></button></div>
       <div class="row l-actions"><button class="btn" type="button" id="l-del" hidden>Remove listing</button><button class="btn" type="button" id="l-close">Close</button></div>
     </div>
@@ -228,7 +236,7 @@
   import { FontLoader } from 'three/addons/loaders/FontLoader.js';
   import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
   window.THREE = { ...THREE_NS, FontLoader, TextGeometry };
-  const scripts = ['gemstones', 'pricing-engine', 'stl-exporter', 'cad-engine', 'ai-designer', 'spec-sheet', 'cloud', 'marketplace', 'ui-controller'];
+  const scripts = ['gemstones', 'pricing-engine', 'stl-exporter', 'cad-engine', 'ai-designer', 'spec-sheet', 'cloud', 'marketplace', 'shop', 'ui-controller'];
   for (const name of scripts) {
     await new Promise((resolve, reject) => {
       const s = document.createElement('script');

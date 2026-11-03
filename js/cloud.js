@@ -63,5 +63,25 @@ const AurixCloud = (() => {
     if (error) throw error;
   }
 
-  return { user, onAuth, signIn, signUp, signOut, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike };
+  /* demo checkout: no payment is taken (see supabase/migrations/*_orders.sql) */
+  async function placeOrder(items) {
+    const { data, error } = await db.rpc('place_order', { p_items: items });
+    if (error) throw error;
+    return data;
+  }
+  async function listOrders() {
+    const { data, error } = await db.from('orders')
+      .select('id,created_at,order_items(id,listing_ref,title,seller_name,price,config,thumbnail)')
+      .order('created_at', { ascending: false }).limit(100);
+    if (error) throw error;
+    return data;
+  }
+  async function listSales(sellerId) {
+    const { data, error } = await db.from('order_items')
+      .select('id,listing_ref,title,price,created_at').eq('seller_id', sellerId).order('created_at', { ascending: false }).limit(200);
+    if (error) throw error;
+    return data;
+  }
+
+  return { user, onAuth, signIn, signUp, signOut, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike, placeOrder, listOrders, listSales };
 })();
