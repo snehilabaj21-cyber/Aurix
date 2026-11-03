@@ -94,7 +94,7 @@ const AurixShop = (() => {
         body('<h3>Orders</h3>' + tabs + (orders.length ? orders.map((o, oi) => {
           const t = total(o.order_items);
           return '<div class="shop-order"><div class="shop-order-h"><span><b>Order ' + orderNo(o.id) + '</b> · ' + day(o.created_at) + '</span><b>' + money(t) + '</b></div>' +
-            o.order_items.map((i, ii) => '<div class="shop-row">' + thumb(i.thumbnail, i.title) + '<div class="meta"><b>' + esc(i.title) + '</b><span>by ' + esc(i.seller_name) + ' · ' + (i.status === 'delivered' ? 'Delivered' : 'Waiting for the seller') + '</span></div>' +
+            o.order_items.map((i, ii) => '<div class="shop-row">' + thumb(i.thumbnail, i.title) + '<div class="meta"><b>' + esc(i.title) + '</b><span>by ' + esc(i.seller_name) + ' · ' + (i.status === 'delivered' || /^f[0-9]{1,3}$/.test(i.listing_ref) ? 'Delivered' : 'Waiting for the seller') + '</span></div>' +
               '<div class="shop-price">' + money(i.price) + '</div><button class="btn" data-act="review" data-ref="' + esc(i.listing_ref) + '">Review</button><button class="btn" data-act="open-order" data-o="' + oi + '" data-i="' + ii + '">Open in studio</button></div>').join('') + '</div>';
         }).join('') : '<p class="m-empty">You haven’t ordered anything yet.</p>') + '<div class="row shop-actions"><button class="btn" data-act="close">Close</button></div>');
       } else {
