@@ -12,18 +12,34 @@
 <div class="app">
   <header class="top">
     <div class="brand">AURIX<small>Jewelry CAD Studio</small></div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="tab-studio" aria-selected="true" type="button">Studio</button>
+      <button class="tab" role="tab" id="tab-market" aria-selected="false" type="button">Marketplace</button>
+    </nav>
+    <button class="btn back-market" id="btn-back-market" type="button">← Back to marketplace</button>
     <div class="spacer"></div>
+    <button class="btn" id="btn-designs" hidden>My designs</button>
+    <button class="btn" id="btn-save">Save design</button>
+    <button class="btn" id="btn-sell" title="List this design in the marketplace">Sell this design</button>
     <button class="btn" id="btn-store" aria-pressed="false">Storefront view</button>
     <button class="btn" id="btn-spec">Spec sheet</button>
     <button class="btn" id="btn-photo">Studio photo</button>
-    <button class="btn primary" id="btn-stl">Export STL</button>
+    <button class="btn" id="btn-stl-true" title="Exact size, for printing the finished ring directly">STL true size</button>
+    <button class="btn primary" id="btn-stl" title="Casting master, enlarged for metal shrinkage">Export STL</button>
+    <span class="who" id="who"></span>
+    <button class="btn primary" id="btn-account">Sign in</button>
   </header>
 
   <div class="main">
     <aside class="controls" aria-label="Design controls">
       <section class="grp">
+        <h3>Product</h3>
+        <div class="chips" id="products" role="group" aria-label="Product type"></div>
+      </section>
+
+      <section class="grp">
         <h3>AI design assistant</h3>
-        <textarea id="ai-prompt" placeholder='e.g. "2.5ct emerald cut, platinum, hidden halo, knife edge band, size 7"'></textarea>
+        <textarea id="ai-prompt" placeholder='e.g. "2.5ct emerald cut ring, platinum, hidden halo" or "gold name plate bracelet saying &quot;Maya&quot;"'></textarea>
         <div class="row" style="margin-bottom:0"><button class="btn primary" id="ai-go">Design it</button>
           <div class="chips" id="ai-examples"></div></div>
         <div class="ai-note" id="ai-note" role="status"></div>
@@ -31,19 +47,47 @@
         <p class="hint">Rule-based interpreter that runs in your browser — no external AI service.</p>
       </section>
 
-      <section class="grp">
+      <section class="grp only-stone">
         <h3>Center stone</h3>
         <div class="row"><label for="stone">Stone</label><select id="stone"></select></div>
         <div class="swatches" id="stone-sw" style="margin:0 0 12px"></div>
         <div class="shapes" id="shapes"></div>
         <div class="row"><label for="carat">Carat</label><input type="range" id="carat" min="0.3" max="5" step="0.05"><output id="carat-o"></output></div>
-        <div class="row"><label for="rot">Rotate stone</label><input type="range" id="rot" min="-90" max="90" step="5"><output id="rot-o"></output></div>
-        <div class="chips" style="margin-bottom:6px"><button class="chip" type="button" id="rot-ns">North-south</button><button class="chip" type="button" id="rot-ew">East-west (90°)</button></div>
+        <div class="row only-ring"><label for="rot">Rotate stone</label><input type="range" id="rot" min="-90" max="90" step="5"><output id="rot-o"></output></div>
+        <div class="chips only-ring" style="margin-bottom:6px"><button class="chip" type="button" id="rot-ns">North-south</button><button class="chip" type="button" id="rot-ew">East-west (90°)</button></div>
         <div class="row" id="color-row"><label for="color">Color</label><select id="color"></select></div>
         <div class="row"><label for="clarity">Clarity</label><select id="clarity"></select></div>
       </section>
 
-      <section class="grp">
+      <section class="grp only-pendant">
+        <h3>Pendant</h3>
+        <div class="shapes" id="p-shapes" style="margin-bottom:12px"></div>
+        <div class="row"><label for="p-size">Height</label><input type="range" id="p-size" min="14" max="45" step="1"><output id="p-size-o"></output></div>
+        <div class="row"><label for="p-thick">Thickness</label><input type="range" id="p-thick" min="0.9" max="3" step="0.1"><output id="p-thick-o"></output></div>
+        <div class="row"><label>Center stone</label><div class="chips" id="p-stone"></div></div>
+        <div class="row only-stone"><label for="p-halo">Halo</label><select id="p-halo"><option value="none">None</option><option value="hidden">Hidden halo</option><option value="classic">Classic pavé halo</option></select></div>
+        <div class="row"><label>Bail</label><div class="chips" id="p-bail"></div></div>
+        <p class="hint" id="p-fit" role="status"></p>
+      </section>
+
+      <section class="grp text-sec">
+        <h3>Lettering</h3>
+        <div class="row"><label for="plate-text">Text</label><input type="text" id="plate-text" maxlength="20" placeholder="Name or word"></div>
+        <div class="chips" id="fonts" role="group" aria-label="Typeface" style="margin-bottom:12px"></div>
+        <div class="row"><label for="t-size">Letter height</label><input type="range" id="t-size" min="2.5" max="9" step="0.5"><output id="t-size-o"></output></div>
+        <div class="row"><label for="t-raise">Raised by</label><input type="range" id="t-raise" min="0.4" max="1.6" step="0.1"><output id="t-raise-o"></output></div>
+      </section>
+
+      <section class="grp only-plate">
+        <h3>Name plate</h3>
+        <div class="chips" id="plate-styles" role="group" aria-label="Plate shape" style="margin-bottom:12px"></div>
+        <div class="row"><label for="pl-h">Height</label><input type="range" id="pl-h" min="6" max="18" step="0.5"><output id="pl-h-o"></output></div>
+        <div class="row"><label for="pl-th">Thickness</label><input type="range" id="pl-th" min="0.9" max="2.6" step="0.1"><output id="pl-th-o"></output></div>
+        <div class="row"><label>Bracelet loops</label><div class="chips" id="plate-loops"></div></div>
+        <p class="hint">Width follows the text. A jump ring at each end takes your bracelet chain.</p>
+      </section>
+
+      <section class="grp only-ring">
         <h3>Setting</h3>
         <div class="chips" id="heads" role="group" aria-label="Head style"></div>
         <div class="row"><label for="prong">Prong Ø</label><input type="range" id="prong" min="0.4" max="1.6" step="0.05"><output id="prong-o"></output></div>
@@ -51,7 +95,7 @@
         <div class="row"><label for="accents">Shank pavé</label><select id="accents"><option value="none">None</option><option value="half">Half way</option><option value="full">Full eternity</option></select></div>
       </section>
 
-      <section class="grp">
+      <section class="grp only-ring">
         <h3>Band</h3>
         <div class="chips" id="profiles" role="group" aria-label="Band profile"></div>
         <div class="row"><label for="thick">Thickness</label><input type="range" id="thick" min="0.6" max="3" step="0.1"><output id="thick-o"></output></div>
@@ -77,31 +121,123 @@
         <div class="price" id="price">—</div>
         <table style="margin-top:8px">
           <tr><td>Metal weight</td><td id="m-weight">—</td></tr>
-          <tr><td>Center stone</td><td id="m-stone">—</td></tr>
-          <tr><td>Ring size</td><td id="m-size">—</td></tr>
+          <tr><td id="m-stone-l">Center stone</td><td id="m-stone">—</td></tr>
+          <tr><td id="m-size-l">Ring size</td><td id="m-size">—</td></tr>
         </table>
         <details><summary>Cost breakdown (wholesale)</summary><table id="breakdown"></table></details>
         <div class="store-cta"><button class="btn primary" id="btn-bag">Add to bag</button><button class="btn" id="btn-share">Copy link</button></div>
       </div>
 
-      <div class="view-tools"><span>Drag to rotate · scroll to zoom</span><button class="btn" id="btn-focus" aria-pressed="false">Focus stone</button><button class="btn" id="btn-rotate" aria-pressed="true">Auto-rotate: on</button></div>
+      <div class="view-tools"><span>Drag to rotate · scroll to zoom</span><button class="btn only-ring" id="btn-focus" aria-pressed="false">Focus stone</button><button class="btn" id="btn-rotate" aria-pressed="true">Auto-rotate: on</button></div>
     </main>
   </div>
+
+    <section class="market" id="market" aria-label="Marketplace">
+      <div class="m-wrap">
+        <div class="m-hero">
+          <h2>Marketplace</h2>
+          <p id="market-count">Jewelry designs from independent makers</p>
+          <p class="m-sub">Browse rings, pendants and name plates, or publish your own design and sell it.</p>
+        </div>
+        <div class="m-bar">
+          <input type="search" id="market-q" placeholder="Search designs or makers" aria-label="Search the marketplace">
+          <div class="chips" id="market-cats" role="group" aria-label="Category"></div>
+          <select id="market-sort" aria-label="Sort"><option value="new">Newest</option><option value="popular">Most liked</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option></select>
+          <button class="chip" type="button" id="market-mine" aria-pressed="false">My listings</button>
+          <button class="btn primary" type="button" id="market-publish">Publish a design</button>
+        </div>
+        <div class="m-notice" id="market-notice" hidden role="status"></div>
+        <div class="m-grid" id="market-grid"></div>
+      </div>
+    </section>
 </div>
 
 <div class="modal" id="spec-modal" role="dialog" aria-modal="true" aria-label="Specification sheet">
   <div class="bar-actions"><button class="btn primary" id="spec-print">Print / save PDF</button><button class="btn" id="spec-close">Close</button></div>
   <div id="spec-host"></div>
 </div>
+<div class="modal auth-page" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+  <div class="auth-split">
+    <aside class="auth-brand" aria-hidden="true">
+      <svg class="auth-art" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="ag" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e6c77f"/><stop offset="1" stop-color="#c9a45c" stop-opacity=".1"/></linearGradient></defs>
+        <g fill="none" stroke="url(#ag)" stroke-width="1.4"><path d="M-40 560C120 470 220 640 360 540S560 380 660 470"/><path d="M-40 610C130 520 230 690 370 590S570 430 660 520" opacity=".7"/><path d="M-40 660C140 570 240 740 380 640S580 480 660 570" opacity=".45"/><path d="M-40 710C150 620 250 790 390 690S590 530 660 620" opacity=".25"/><circle cx="440" cy="250" r="120" opacity=".5"/><circle cx="440" cy="250" r="82" opacity=".35"/><circle cx="440" cy="250" r="44" opacity=".25"/></g></svg>
+      <div class="auth-logo">AURIX</div>
+      <div class="auth-pitch"><h2>Where jewelers design, price and sell their work.</h2><p>The trusted CAD studio for rings, pendants and name plates, with a marketplace for your finished designs.</p></div>
+      <div class="auth-copy">&copy; 2026 Aurix. All rights reserved.</div>
+    </aside>
+    <section class="auth-panel">
+      <button class="auth-x" type="button" id="auth-close" aria-label="Close">&times;</button>
+      <form class="auth-form" id="auth-form">
+        <h3 id="auth-title">Welcome back!</h3>
+        <p class="auth-sub" id="auth-sub">Sign in to your account to continue</p>
+        <label for="auth-email">Email address</label>
+        <input type="email" id="auth-email" autocomplete="email" placeholder="you@studio.com" required>
+        <label for="auth-pass">Password</label>
+        <div class="auth-pw"><input type="password" id="auth-pass" autocomplete="current-password" minlength="8" placeholder="At least 8 characters" required><button type="button" id="auth-eye" aria-label="Show password" aria-pressed="false">Show</button></div>
+        <div class="auth-err" id="auth-err" role="alert"></div>
+        <button class="auth-go" type="submit" id="auth-submit">Sign in</button>
+        <p class="auth-alt"><span id="auth-alt-text">Don’t have an account?</span> <button type="button" id="auth-switch">Sign up</button></p>
+      </form>
+    </section>
+  </div>
+</div>
+<div class="modal dlg" id="designs-modal" role="dialog" aria-modal="true" aria-label="My designs">
+  <div class="card wide"><h3>My designs</h3><div id="designs-list"></div>
+    <div class="row" style="margin:12px 0 0"><button class="btn" type="button" id="designs-close">Close</button></div></div>
+</div>
+<div class="modal dlg" id="publish-modal" role="dialog" aria-modal="true" aria-label="Publish a design">
+  <form class="card wide" id="publish-form">
+    <button class="x-close" type="button" id="pub-x" aria-label="Close">&times;</button>
+    <h3>Publish to the marketplace</h3>
+    <img class="p-thumb" id="p-thumb" alt="Preview of the design you are publishing">
+    <p class="hint" style="text-align:center">This lists the design currently open in the studio.</p>
+    <div class="row"><label for="pub-title">Title</label><input type="text" id="pub-title" maxlength="80" required></div>
+    <div class="row"><label for="pub-seller">Seller name</label><input type="text" id="pub-seller" maxlength="40" required></div>
+    <div class="row"><label for="pub-price">Price (USD)</label><input type="number" id="pub-price" min="0" max="100000" step="0.01" required></div>
+    <div class="row"><label for="pub-desc">Description</label><textarea id="pub-desc" maxlength="600" placeholder="What makes this design special?"></textarea></div>
+    <div class="auth-err" id="pub-err" role="alert"></div>
+    <div class="row" style="margin:12px 0 0"><button class="btn primary" type="submit" id="pub-submit">Publish</button><button class="btn" type="button" id="pub-cancel">Cancel</button></div>
+  </form>
+</div>
+<div class="modal dlg" id="listing-modal" role="dialog" aria-modal="true" aria-label="Listing">
+  <div class="card listing">
+    <button class="x-close" type="button" id="l-x" aria-label="Close">&times;</button>
+    <img id="l-img" alt="">
+    <div class="l-info">
+      <h3 id="l-title"></h3><div class="l-seller" id="l-seller"></div>
+      <p id="l-desc"></p>
+      <table class="l-specs" id="l-specs"></table>
+      <div class="l-price" id="l-price"></div>
+      <div class="row l-actions"><button class="btn primary" type="button" id="l-buy">Buy design</button><button class="btn" type="button" id="l-open">Open in studio</button>
+        <button class="m-like" type="button" id="l-like" aria-pressed="false" aria-label="Like"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.5-9.2C1.2 8.6 3 5 6.4 5c2 0 3.6 1.1 5.6 3.2C14 6.1 15.6 5 17.6 5 21 5 22.8 8.6 21.5 11.8 19.5 16.4 12 21 12 21z"/></svg></button></div>
+      <div class="row l-actions"><button class="btn" type="button" id="l-del" hidden>Remove listing</button><button class="btn" type="button" id="l-close">Close</button></div>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>
-<script src="js/gemstones.js"></script>
-<script src="js/pricing-engine.js"></script>
-<script src="js/stl-exporter.js"></script>
-<script src="js/cad-engine.js"></script>
-<script src="js/ai-designer.js"></script>
-<script src="js/spec-sheet.js"></script>
-<script src="js/ui-controller.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
+                 "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/" } }
+</script>
+<script type="module">
+  // three.min.js is deprecated (removed in r160), so load the ES module build and
+  // expose it as a global for the classic scripts below, which run in order after it.
+  import * as THREE_NS from 'three';
+  import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+  import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+  window.THREE = { ...THREE_NS, FontLoader, TextGeometry };
+  const scripts = ['gemstones', 'pricing-engine', 'stl-exporter', 'cad-engine', 'ai-designer', 'spec-sheet', 'cloud', 'marketplace', 'ui-controller'];
+  for (const name of scripts) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'js/' + name + '.js';
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('Failed to load js/' + name + '.js'));
+      document.body.appendChild(s);
+    });
+  }
+</script>
 </body>
 </html>

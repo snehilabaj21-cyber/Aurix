@@ -1,0 +1,3 @@
+# Minimal config so the Supabase GitHub integration recognises this directory.
+# Run `supabase init` locally to generate the full file if you use the CLI.
+project_id = "aurix"

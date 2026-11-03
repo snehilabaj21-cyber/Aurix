@@ -28,26 +28,55 @@ const PricingEngine = (() => {
     const rate = SPOT[a.base] * a.purity * 1.06; // 6% alloying / refining margin
     const metal = metalG * rate;
     const casting = metal * 0.15 + 95; // spruing/casting loss + lost-wax casting & polish
+    const product = cfg.product || 'ring';
+    const hasStone = product === 'ring' || (product === 'pendant' && cfg.pendantStone);
     const type = GemstoneLibrary.TYPES[cfg.stoneType] || GemstoneLibrary.TYPES.diamond;
     const graded = type.graded; // only white diamonds use the D–I color scale
-    const diamond = type.price * Math.pow(cfg.carat, type.exp) * (graded ? (COLOR_F[cfg.color] || 1) : 1) * (CLARITY_F[cfg.clarity] || 1) * (SHAPE_F[cfg.gemShape] || 1);
+    const diamond = !hasStone ? 0 : type.price * Math.pow(cfg.carat, type.exp) * (graded ? (COLOR_F[cfg.color] || 1) : 1) * (CLARITY_F[cfg.clarity] || 1) * (SHAPE_F[cfg.gemShape] || 1);
     const beads = metrics.beadCount;
     const pave = beads * (BEAD_STONE + BEAD_LABOR);
-    const setting = 65 + (cfg.halo !== 'none' ? 40 : 0) + (cfg.headStyle === 'bezel' ? 30 : 0);
+    const letters = product === 'ring' ? 0 : ((cfg.plateText || '').replace(/\s/g, '').length);
+    const lettered = product === 'nameplate' || (product === 'pendant' && !cfg.pendantStone);
+    const setting = product === 'ring' ? 65 + (cfg.halo !== 'none' ? 40 : 0) + (cfg.headStyle === 'bezel' ? 30 : 0)
+      : (hasStone ? 65 + (cfg.halo !== 'none' ? 40 : 0) + 30 : 30) + (lettered ? 4 * letters : 0) + (product === 'nameplate' && cfg.plateLoops === 'both' ? 12 : 0);
     const wholesale = metal + casting + diamond + pave + setting;
-    return {
-      lines: [
-        ['Metal (' + a.label + ', ' + metalG.toFixed(2) + ' g)', metal],
-        ['Casting overhead & finishing', casting],
-        ['Center ' + type.label.toLowerCase() + ' (' + cfg.carat.toFixed(2) + ' ct' + (graded ? ' ' + cfg.color : '') + '/' + cfg.clarity + ')', diamond],
-        ['Pavé / halo stones (' + beads + ')', pave],
-        ['Setting labor', setting]
-      ],
-      wholesale, retail: wholesale * KEYSTONE
-    };
+    const lines = [
+      ['Metal (' + a.label + ', ' + metalG.toFixed(2) + ' g)', metal],
+      ['Casting overhead & finishing', casting]
+    ];
+    if (hasStone) lines.push(['Center ' + type.label.toLowerCase() + ' (' + cfg.carat.toFixed(2) + ' ct' + (graded ? ' ' + cfg.color : '') + '/' + cfg.clarity + ')', diamond]);
+    if (product === 'ring' || beads) lines.push(['Pavé / halo stones (' + beads + ')', pave]);
+    lines.push([lettered ? 'Assembly & lettering finish' : product === 'pendant' ? 'Setting & bail labor' : 'Setting labor', setting]);
+    return { lines, wholesale, retail: wholesale * KEYSTONE };
   }
 
-  function checkManufacturingFeasibility(cfg) {
+  // Pendants and name plates: thin metal, lettering that is too fine to cast, stone that will not fit the pendant.
+  function checkProductFeasibility(cfg, metrics) {
+    const issues = [], plate = metrics && metrics.plate;
+    let score = 100;
+    const th = cfg.product === 'pendant' ? cfg.pendantThickness : cfg.plateThickness;
+    if (th < 1.0) { issues.push({ level: 'error', text: 'Metal thinner than 1.0 mm risks porosity and bending.' }); score -= 40; }
+    else if (th < 1.3) { issues.push({ level: 'warn', text: 'Thin metal — consider ≥1.3 mm for durability.' }); score -= 8; }
+    const lettered = cfg.product === 'nameplate' || !cfg.pendantStone;
+    if (lettered && (cfg.plateText || '').trim()) {
+      if (cfg.textSize < 3) { issues.push({ level: 'warn', text: 'Letters under 3 mm tall may fill in when cast.' }); score -= 12; }
+      if (cfg.textRaise < 0.5) { issues.push({ level: 'warn', text: 'Lettering raised less than 0.5 mm loses definition after polishing.' }); score -= 10; }
+      if (metrics && metrics.textMissing) { issues.push({ level: 'warn', text: 'Typeface still loading (or unavailable offline) — lettering not shown yet.' }); score -= 10; }
+    }
+    if (cfg.product === 'nameplate') {
+      if (cfg.textSize + 3 > cfg.plateHeight) { issues.push({ level: 'error', text: 'Plate is too short for this letter height — increase plate height or shrink the text.' }); score -= 30; }
+      if (plate && plate.width > 50) { issues.push({ level: 'warn', text: 'Plate is ' + plate.width.toFixed(0) + ' mm long — over ~50 mm sits awkwardly on a wrist.' }); score -= 10; }
+      if (!(cfg.plateText || '').trim()) { issues.push({ level: 'warn', text: 'No text yet.' }); score -= 10; }
+    } else if (cfg.pendantStone) {
+      if (metrics && metrics.fits === false) { issues.push({ level: 'error', text: 'Stone and setting do not fit inside the pendant — enlarge the pendant or reduce the carat.' }); score -= 30; }
+      if (cfg.prongThickness < 0.5) { issues.push({ level: 'warn', text: 'Bezel wall is very thin.' }); score -= 8; }
+    }
+    score = Math.max(0, score);
+    return { score, issues, castReady: !issues.some((i) => i.level === 'error') && score >= 80 };
+  }
+
+  function checkManufacturingFeasibility(cfg, metrics) {
+    if (cfg.product === 'pendant' || cfg.product === 'nameplate') return checkProductFeasibility(cfg, metrics);
     const issues = [];
     let score = 100;
     if (cfg.bandThickness < 0.85) { issues.push({ level: 'error', text: 'Band thickness under 0.85 mm risks porosity and cracking.' }); score -= 40; }
