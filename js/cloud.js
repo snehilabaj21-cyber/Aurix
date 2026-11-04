@@ -70,21 +70,21 @@ const AurixCloud = (() => {
   }
 
   /* demo checkout: no payment is taken (see supabase/migrations/*_orders.sql) */
-  async function placeOrder(items) {
-    const { data, error } = await db.rpc('place_order', { p_items: items });
+  async function placeOrder(items, share) {
+    const { data, error } = await db.rpc('place_order', { p_items: items, p_share: !!share });
     if (error) throw error;
     return data;
   }
   async function listOrders() {
     const { data, error } = await db.from('orders')
-      .select('id,created_at,order_items(id,listing_ref,title,seller_name,price,config,thumbnail,status)')
+      .select('id,created_at,order_items(id,listing_ref,title,seller_name,price,config,thumbnail,status,shared_contact)')
       .order('created_at', { ascending: false }).limit(100);
     if (error) throw error;
     return data;
   }
   async function listSales(sellerId) {
     const { data, error } = await db.from('order_items')
-      .select('id,listing_ref,title,price,created_at,status').eq('seller_id', sellerId).order('created_at', { ascending: false }).limit(200);
+      .select('id,listing_ref,title,price,created_at,status,shared_contact').eq('seller_id', sellerId).order('created_at', { ascending: false }).limit(200);
     if (error) throw error;
     return data;
   }

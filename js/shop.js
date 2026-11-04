@@ -60,26 +60,35 @@ const AurixShop = (() => {
   async function checkoutView() {
     const { rows } = await cartRows();
     if (!rows.length) return cartView();
+    // sellers only get contact details if the buyer chooses to share them
+    const acct = me ? await AurixCloud.getAccount(me.id).catch(() => null) : null;
+    const hasContact = !!acct && (acct.phone.trim() || acct.address_line1.trim());
+    const preview = acct ? [acct.full_name, acct.phone, [acct.address_line1, acct.city, acct.country].filter(Boolean).join(', ')].filter((x) => x && x.trim()).join(' · ') : '';
+    const contactSec = !rows.some((r) => !r.featured) ? ''
+      : hasContact ? '<div class="shop-sec"><h4>Contact details</h4><label class="shop-share"><input type="checkbox" id="shop-share"><span>Share my contact details with the seller so they can reach me about this order.</span></label>' +
+        '<p class="shop-muted">They would see: ' + esc(preview) + '. Only the seller of each design sees them, and only for this order.</p></div>'
+      : '<div class="shop-sec"><h4>Contact details</h4><p class="shop-muted">Sellers only get your phone number or address if you choose to share them. Add them to <button class="linklike" type="button" data-act="profile">My profile</button> if you want that option.</p></div>';
     body('<h3>Checkout</h3><div class="shop-demo" role="note"><b>Demo checkout.</b> No payment is taken and no money changes hands.</div>' +
       '<div class="shop-sec"><h4>Order summary</h4>' + rows.map((r) => '<div class="shop-row">' + thumb(r.thumbnail, r.title) + '<div class="meta"><b>' + esc(r.title) + '</b><span>by ' + esc(r.seller_name) + '</span></div><div class="shop-price">' + money(r.price) + '</div></div>').join('') + '</div>' +
       '<div class="shop-sec"><h4>Payment</h4><p class="shop-muted">Demo payment (no card needed)</p></div>' +
-      '<div class="shop-sec"><h4>Delivery</h4><p class="shop-muted">Digital: designs open in your studio straight after you place the order.</p></div>' +
+      '<div class="shop-sec"><h4>Delivery</h4><p class="shop-muted">Digital: designs open in your studio straight after you place the order.</p></div>' + contactSec +
       '<div class="shop-total"><span>Order total</span><b>' + money(total(rows)) + '</b></div><div class="auth-err" id="shop-err" role="alert"></div>' +
       '<div class="row shop-actions"><button class="btn" data-act="cart">Back to cart</button><button class="btn primary" data-act="place">Place order</button></div>');
   }
 
   async function place(btn) {
     const err = ctx.$('shop-err'); err.textContent = ''; btn.disabled = true;
+    const share = !!(ctx.$('shop-share') && ctx.$('shop-share').checked);
     try {
       const { rows } = await cartRows();
       if (!rows.length) return cartView();
       const id = await AurixCloud.placeOrder(rows.map((r) => ({
         ref: r.id, title: r.title, seller_name: r.seller_name, price: r.price, config: r.config,
         thumbnail: r.featured && safeImg(r.thumbnail) && r.thumbnail.length < 190000 ? r.thumbnail : null
-      })));
+      })), share);
       cart = []; saveCart(); await refreshOwned();
       ctx.toast('Order placed! Order ' + orderNo(id) + ' is in your Orders.');
-      body('<div class="shop-done"><div class="shop-check" aria-hidden="true">✓</div><h3>Order placed</h3><p class="shop-muted">Order ' + orderNo(id) + ' · demo order, no payment was taken.</p></div>' +
+      body('<div class="shop-done"><div class="shop-check" aria-hidden="true">✓</div><h3>Order placed</h3><p class="shop-muted">Order ' + orderNo(id) + ' · demo order, no payment was taken.</p>' + (share ? '<p class="shop-muted">Your contact details were shared with the seller.</p>' : '') + '</div>' +
         rows.map((r, i) => '<div class="shop-row">' + thumb(r.thumbnail, r.title) + '<div class="meta"><b>' + esc(r.title) + '</b><span>by ' + esc(r.seller_name) + '</span></div>' +
           '<div class="shop-price">' + money(r.price) + '</div><button class="btn primary" data-act="open-cfg" data-i="' + i + '">Open in studio</button></div>').join('') +
         '<div class="row shop-actions"><button class="btn" data-act="close">Keep browsing</button><button class="btn" data-act="orders">View orders</button></div>');
@@ -101,7 +110,7 @@ const AurixShop = (() => {
         body('<h3>Orders</h3>' + tabs + (orders.length ? orders.map((o, oi) => {
           const t = total(o.order_items);
           return '<div class="shop-order"><div class="shop-order-h"><span><b>Order ' + orderNo(o.id) + '</b> · ' + day(o.created_at) + '</span><b>' + money(t) + '</b></div>' +
-            o.order_items.map((i, ii) => '<div class="shop-row">' + thumb(i.thumbnail, i.title) + '<div class="meta"><b>' + esc(i.title) + '</b><span>by ' + esc(i.seller_name) + ' · ' + (i.status === 'delivered' || /^f[0-9]{1,3}$/.test(i.listing_ref) ? 'Delivered' : 'Waiting for the seller') + '</span></div>' +
+            o.order_items.map((i, ii) => '<div class="shop-row">' + thumb(i.thumbnail, i.title) + '<div class="meta"><b>' + esc(i.title) + '</b><span>by ' + esc(i.seller_name) + ' · ' + (i.status === 'delivered' || /^f[0-9]{1,3}$/.test(i.listing_ref) ? 'Delivered' : 'Waiting for the seller') + (i.shared_contact ? ' · Contact shared' : '') + '</span></div>' +
               '<div class="shop-price">' + money(i.price) + '</div><button class="btn" data-act="review" data-ref="' + esc(i.listing_ref) + '">Review</button><button class="btn" data-act="open-order" data-o="' + oi + '" data-i="' + ii + '">Open in studio</button></div>').join('') + '</div>';
         }).join('') : '<p class="m-empty">You haven’t ordered anything yet.</p>') + '<div class="row shop-actions"><button class="btn" data-act="close">Close</button></div>');
       } else {
@@ -134,6 +143,7 @@ const AurixShop = (() => {
       if (act === 'close') close();
       else if (act === 'remove') { remove(b.dataset.ref); ctx.toast('Removed from cart'); cartView(); }
       else if (act === 'cart') cartView();
+      else if (act === 'profile') { close(); market().show('account'); }
       else if (act === 'checkout') { if (!me) { ctx.toast('Sign in to check out'); close(); ctx.openAuth(); } else checkoutView(); }
       else if (act === 'place') place(b);
       else if (act === 'orders') ordersView('orders');
