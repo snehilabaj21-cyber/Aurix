@@ -297,7 +297,7 @@ body[data-view=sell] .seller { display: block; }
 .sell-chart-h .shop-tabs { margin: 0; border: 0; }
 .sell-chart svg { display: block; width: 100%; max-width: 640px; height: auto; margin: 0 auto; }
 .sell-bar { fill: var(--gold); } .sell-chart text { fill: var(--muted); font-size: 10px; } .sell-axis { font-size: 9px !important; }
-.sell-profile .row { margin-bottom: 10px; } .sell-profile a.btn { text-decoration: none; display: inline-block; }
+.sell-profile .row { margin-bottom: 10px; } .sell-profile a.btn { text-decoration: none; display: inline-block; color: inherit; } .sell-profile a.btn:hover { color: var(--gold-2); }
 .sell-draft { background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); }
 
 /* reviews, ratings and seller pages */
@@ -335,3 +335,9 @@ body[data-view=account] .account { display: block; }
 .acct-card .row input { flex: 1; min-width: 0; }
 .acct-dl { display: grid; grid-template-columns: 140px 1fr; gap: 8px 12px; margin: 0; } .acct-dl dt { color: var(--muted); } .acct-dl dd { margin: 0; overflow-wrap: anywhere; }
 @media (max-width: 860px) { .account { overflow: visible; } .acct-card .row { flex-wrap: wrap; } .acct-card .row label { flex-basis: 100%; } .acct-dl { grid-template-columns: 1fr; gap: 2px; } .acct-dl dd { margin-bottom: 8px; } }
+
+/* contact sharing: checkout opt-in and the seller's view of a buyer's details */
+.shop-share { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; } .shop-share input { margin-top: 3px; accent-color: var(--gold); flex: none; }
+.sell-contact summary { cursor: pointer; color: var(--gold-2); font-size: 12px; margin-top: 4px; }
+.sell-contact > div { margin: 6px 0 2px; padding: 8px 10px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; font-size: 12px; line-height: 1.7; color: var(--text); white-space: normal; overflow-wrap: anywhere; }
+.sell-contact a { color: var(--gold-2); } .sell-nc { display: block; margin-top: 2px; }

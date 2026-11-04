@@ -33,6 +33,16 @@ const AurixSeller = (() => {
   }
 
   /* last 14 days of sales or likes as a small bar chart */
+  /* a buyer’s phone and address, shown only if they chose to share them with this seller */
+  function contactHtml(c) {
+    if (!c) return '<span class="shop-muted sell-nc">Buyer contact not shared</span>';
+    const lines = [], a = [c.address_line1, c.address_line2, [c.city, c.region, c.postal_code].filter(Boolean).join(', '), c.country].filter((x) => x && String(x).trim());
+    if (c.full_name) lines.push('<b>' + esc(c.full_name) + '</b>');
+    if (c.phone) lines.push('Phone: <a href="tel:' + esc(String(c.phone).replace(/[^0-9+]/g, '')) + '">' + esc(c.phone) + '</a>');
+    if (a.length) lines.push('Address: ' + a.map(esc).join(', '));
+    return '<details class="sell-contact"><summary>Buyer contact details</summary><div>' + lines.join('<br>') + '</div></details>';
+  }
+
   function chart() {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const days = Array.from({ length: 14 }, (_, i) => new Date(today.getTime() - (13 - i) * 864e5));
@@ -83,8 +93,8 @@ const AurixSeller = (() => {
         (l.status === 'draft' ? '<button class="btn primary" data-act="publish" data-id="' + esc(l.id) + '">Publish</button>' : '') +
         '<button class="btn" data-act="edit" data-id="' + esc(l.id) + '">Edit</button><button class="btn" data-act="remove" data-id="' + esc(l.id) + '">Remove</button></div>').join('')
         : '<p class="m-empty">You haven’t published anything yet. Design something in the studio, then choose “Sell this design”.</p><div class="sell-cta"><button class="btn primary" data-act="studio">Open the studio</button></div>') +
-      '<h3 class="sell-h">Recent sales</h3>' + (sales.length ? sales.slice(0, 20).map((s) => '<div class="shop-row"><div class="meta"><b>' + esc(s.title) +
-        (new Date(s.created_at).getTime() > seenAt ? ' <em class="sell-new">New</em>' : '') + '</b><span>' + day(s.created_at) + ' · ' + (s.status === 'delivered' ? 'Delivered' : 'Waiting for delivery') + '</span></div><div class="shop-price">' + money(s.price) + '</div>' +
+      '<h3 class="sell-h">Recent sales</h3><p class="shop-muted">Buyers choose whether to share their phone number and address with you. Use them only for that order.</p>' + (sales.length ? sales.slice(0, 20).map((s) => '<div class="shop-row"><div class="meta"><b>' + esc(s.title) +
+        (new Date(s.created_at).getTime() > seenAt ? ' <em class="sell-new">New</em>' : '') + '</b><span>' + day(s.created_at) + ' · ' + (s.status === 'delivered' ? 'Delivered' : 'Waiting for delivery') + '</span>' + contactHtml(s.shared_contact) + '</div><div class="shop-price">' + money(s.price) + '</div>' +
         (s.status === 'delivered' ? '' : '<button class="btn" data-act="deliver" data-id="' + esc(s.id) + '">Mark delivered</button>') + '</div>').join('')
         : '<p class="m-empty">No one has ordered your designs yet.</p>');
   }
