@@ -250,14 +250,18 @@
   $('auth-close').addEventListener('click', () => closeModal('auth-modal'));
   $('auth-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = $('auth-email').value.trim(), pass = $('auth-pass').value;
+    const email = $('auth-email').value.trim(), pass = $('auth-pass').value, btn = $('auth-submit'), label = btn.textContent;
+    $('auth-err').textContent = ''; btn.disabled = true; btn.textContent = signingUp ? 'Creating account…' : 'Signing in…';
+    // never leave the button dead: say so if the server doesn't answer
+    const slow = setTimeout(() => { $('auth-err').textContent = 'This is taking longer than usual. Check your connection and try again.'; }, 12000);
     try {
       if (signingUp) {
         await AurixCloud.signUp(email, pass);
         toast('Welcome to Aurix! Your account is ready.');
       } else { await AurixCloud.signIn(email, pass); toast('Signed in successfully'); }
-      closeModal('auth-modal'); $('auth-pass').value = '';
-    } catch (err) { $('auth-err').textContent = err.message; }
+      closeModal('auth-modal'); $('auth-pass').value = ''; $('auth-err').textContent = '';
+    } catch (err) { $('auth-err').textContent = err.message || 'Something went wrong. Please try again.'; }
+    finally { clearTimeout(slow); btn.disabled = false; btn.textContent = label; }
   });
   $('btn-save').addEventListener('click', async () => {
     if (!me) { toast('Sign in to save designs'); setAuthMode(false); openModal('auth-modal'); return; }
@@ -308,8 +312,7 @@
   hdr.addEventListener('click', (e) => { if (e.target.closest('.top-tools .btn, .exp .btn:not(.caret), .exp .menu-item, .acct .menu-item, #btn-account')) { hdr.classList.remove('menu-open'); menuBtn.setAttribute('aria-expanded', 'false'); } });
 
   const openAuth = () => { setAuthMode(false); openModal('auth-modal'); };
-  AurixShop.init({ $, toast, openAuth });
-  AurixSeller.init({ $, toast, openAuth });
+  [AurixShop, AurixSeller].forEach((m) => { try { m.init({ $, toast, openAuth }); } catch (e) { console.error('module failed to start', e); } });
 
   window.aurix = studio; // handy for debugging in the console
 })();

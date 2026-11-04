@@ -5,7 +5,12 @@ const AurixCloud = (() => {
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const user = () => db.auth.getUser().then(({ data }) => data.user);
-  const onAuth = (fn) => db.auth.onAuthStateChange((_e, session) => fn(session && session.user));
+  // Listeners run after the auth call finishes: supabase-js awaits whatever this callback returns, so a slow or failing
+  // listener (they load orders, listings...) would otherwise leave sign-in hanging with no message.
+  const onAuth = (fn) => db.auth.onAuthStateChange((_e, session) => {
+    const u = session && session.user;
+    setTimeout(() => { try { Promise.resolve(fn(u)).catch((e) => console.error('auth listener failed', e)); } catch (e) { console.error('auth listener failed', e); } }, 0);
+  });
 
   async function signIn(email, password) {
     const { error } = await db.auth.signInWithPassword({ email, password });
