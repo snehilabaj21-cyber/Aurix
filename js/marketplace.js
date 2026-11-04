@@ -35,33 +35,43 @@ const AurixMarketplace = (() => {
   const imgOf = (it) => safeImg(it.thumbnail) || thumbs[it.id] || '';
 
   /* ----- data ----- */
-  async function load() {
-    const notice = ctx.$('market-notice');
-    reviews = [];
-    try {
-      const rows = await AurixCloud.listListings();
-      mode = 'cloud';
-      liked = new Set((me() ? await AurixCloud.myLikes().catch(() => []) : []).concat(readLocal(LIKES_KEY, [])));
-      items = rows.concat(FEATURED);
-      reviews = await AurixCloud.listReviews().catch(() => []);
-      notice.hidden = true;
-    } catch (e) {
-      // 42P01 / PGRST205 = the listings table doesn't exist; anything else (network, outage) must not switch to the browser-only demo
-      if (e && (e.code === '42P01' || e.code === 'PGRST205')) {
-        mode = 'local';
-        liked = new Set(readLocal(LIKES_KEY, []));
-        items = readLocal(LOCAL_KEY, []).concat(FEATURED);
-        notice.textContent = 'Demo mode: the marketplace database isn’t set up yet, so listings are saved in this browser only. Run supabase/migrations/20261031000000_marketplace.sql to make them public.';
-      } else {
+  // The featured designs show at once; real listings replace them when they arrive. A request that never answers
+  // is given up on after 15s, so the page can't sit empty.
+  let loaded = false, loading = null;
+  const within = (p, ms = 15000) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('timed out')), ms))]);
+  function load() {
+    if (loading) return loading;
+    loading = (async () => {
+      const notice = ctx.$('market-notice');
+      reviews = [];
+      if (!items.length) { items = FEATURED.slice(); render(); renderFeaturedThumbs(); }
+      try {
+        const rows = await within(AurixCloud.listListings());
         mode = 'cloud';
-        liked = new Set(readLocal(LIKES_KEY, []));
-        items = FEATURED.slice();
-        notice.textContent = 'Couldn’t reach the marketplace right now, so only featured designs are shown. Check your connection and reopen this tab.';
+        liked = new Set((me() ? await within(AurixCloud.myLikes()).catch(() => []) : []).concat(readLocal(LIKES_KEY, [])));
+        items = rows.concat(FEATURED);
+        reviews = await within(AurixCloud.listReviews()).catch(() => []);
+        notice.hidden = true; loaded = true;
+      } catch (e) {
+        console.error('marketplace load failed', e);
+        // 42P01 / PGRST205 = the listings table doesn't exist; anything else (network, outage) must not switch to the browser-only demo
+        if (e && (e.code === '42P01' || e.code === 'PGRST205')) {
+          mode = 'local'; loaded = true;
+          liked = new Set(readLocal(LIKES_KEY, []));
+          items = readLocal(LOCAL_KEY, []).concat(FEATURED);
+          notice.textContent = 'Demo mode: the marketplace database isn’t set up yet, so listings are saved in this browser only. Run supabase/migrations/20261031000000_marketplace.sql to make them public.';
+        } else {
+          mode = 'cloud'; loaded = false; // not loaded: opening the tab again retries
+          liked = new Set(readLocal(LIKES_KEY, []));
+          items = FEATURED.slice();
+          notice.textContent = 'Couldn’t reach the marketplace right now, so only featured designs are shown. Check your connection and reopen this tab.';
+        }
+        notice.hidden = false;
       }
-      notice.hidden = false;
-    }
-    render();
-    renderFeaturedThumbs();
+      render();
+      renderFeaturedThumbs();
+    })().finally(() => { loading = null; });
+    return loading;
   }
 
   // Render featured designs with the real CAD engine, then put the user's design back exactly as it was.
@@ -219,7 +229,7 @@ const AurixMarketplace = (() => {
     closeListing(); show('studio'); document.body.classList.add('from-market'); ctx.applyConfig(cfg); ctx.toast('Opened in the studio');
   }
   const getItem = (ref) => { const it = items.find((i) => i.id === ref); return it ? { ...it, thumbnail: imgOf(it) } : null; };
-  const ensureLoaded = () => items.length ? Promise.resolve() : load();
+  const ensureLoaded = () => loaded ? Promise.resolve() : load();
 
   /* ----- publish ----- */
   function openPublish() {
@@ -283,7 +293,7 @@ const AurixMarketplace = (() => {
     document.body.dataset.view = v;
     if (v === 'market') document.body.classList.remove('from-market');
     ['studio', 'market', 'sell'].forEach((t) => ctx.$('tab-' + t).setAttribute('aria-selected', v === t));
-    if (v === 'market') { if (!items.length) load(); else render(); }
+    if (v === 'market') { if (!loaded) load(); else render(); }
     else if (v === 'studio') setTimeout(() => ctx.studio.resize(), 50);
     document.dispatchEvent(new CustomEvent('aurix:view', { detail: v }));
     const expected = v === 'market' && view.seller ? '#seller/' + view.seller : HASH[v] || '';
@@ -321,8 +331,8 @@ const AurixMarketplace = (() => {
     $('l-open').addEventListener('click', () => openConfig(current.config));
     $('l-del').addEventListener('click', () => removeListing(current));
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeListing(); $('publish-modal').classList.remove('open'); } });
-    AurixCloud.onAuth(() => { if (items.length && document.body.dataset.view === 'market') load(); });
-    document.addEventListener('aurix:listings-changed', () => { items = []; });
+    AurixCloud.onAuth(() => { if (loaded && document.body.dataset.view === 'market') { loaded = false; load(); } });
+    document.addEventListener('aurix:listings-changed', () => { items = []; loaded = false; });
     show(viewFromHash(), false);
   }
 
