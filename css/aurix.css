@@ -27,7 +27,7 @@ section.grp h3 { margin: 0 0 12px; font: 600 11px var(--sans); letter-spacing: .
 .row label { flex: 0 0 96px; color: var(--muted); }
 .row output { flex: 0 0 62px; text-align: right; font-variant-numeric: tabular-nums; }
 .row input[type=range] { flex: 1; accent-color: var(--gold); min-width: 0; }
-select, input[type=text], textarea { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; }
+select, input[type=text], input[type=number], input[type=tel], textarea { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; }
 textarea { resize: vertical; min-height: 64px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 12px; transition: .15s; }
@@ -135,7 +135,7 @@ body[data-product=nameplate] .text-sec, body[data-product=pendant][data-pstone=o
 .tab:focus-visible, .m-img:focus-visible, .m-like:focus-visible { outline: 2px solid var(--gold-2); outline-offset: 2px; }
 .market { display: none; overflow-y: auto; min-height: 0; background: var(--bg); }
 body[data-view=market] .market { display: block; }
-body[data-view=market] .main, body[data-view=sell] .main, body[data-view=market] #btn-store, body[data-view=market] #btn-spec, body[data-view=market] #btn-photo,
+body[data-view=market] .main, body[data-view=sell] .main, body[data-view=account] .main, body[data-view=market] #btn-store, body[data-view=market] #btn-spec, body[data-view=market] #btn-photo,
 body[data-view=market] #btn-stl, body[data-view=market] #btn-stl-true, body[data-view=market] #btn-save, body[data-view=market] #btn-sell { display: none; }
 .m-wrap { max-width: 1320px; margin: 0 auto; padding: 36px 24px 64px; }
 .m-hero { text-align: center; margin-bottom: 28px; }
@@ -171,7 +171,6 @@ body[data-view=market] #btn-stl, body[data-view=market] #btn-stl-true, body[data
 .l-specs { width: 100%; border-collapse: collapse; font-size: 12px; } .l-specs td { padding: 4px 0; border-bottom: 1px solid var(--line); color: var(--muted); } .l-specs td:last-child { text-align: right; color: var(--text); }
 .l-price { font: 600 34px/1 var(--serif); color: var(--gold-2); margin: 16px 0 6px; }
 .l-actions { flex-wrap: wrap; margin: 8px 0 0; }
-#publish-form input, #publish-form textarea { color: #000; }
 @media (max-width: 860px) {
   .tabs { order: 5; margin-left: 0; } .tab { padding: 8px 12px; }
   .market { overflow: visible; } .m-hero h2 { font-size: 36px; } .card.listing { grid-template-columns: 1fr; }
@@ -256,7 +255,7 @@ header.top { position: relative; z-index: 30; }
 .menu-item { text-align: left; background: transparent; border: 0; border-radius: 6px; padding: 9px 12px; cursor: pointer; color: var(--text); white-space: nowrap; }
 .menu-item:hover, .menu-item:focus-visible { background: var(--panel-2); color: var(--gold-2); outline: none; }
 .menu-btn { display: none; }
-body[data-view=market] .top-tools, body[data-view=market] .exp, body[data-view=sell] .top-tools, body[data-view=sell] .exp { display: none !important; }
+body[data-view=market] .top-tools, body[data-view=market] .exp, body[data-view=sell] .top-tools, body[data-view=sell] .exp, body[data-view=account] .top-tools, body[data-view=account] .exp { display: none !important; }
 
 @media (max-width: 860px) {
   header.top { gap: 8px 10px; }
@@ -326,3 +325,13 @@ body[data-view=sell] .seller { display: block; }
 @keyframes note-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
 @media (max-width: 520px) { .toasts { right: 16px; left: 16px; bottom: 16px; width: auto; } }
 @media (prefers-reduced-motion: reduce) { .note { animation: none; } .note.out { transition: none; } }
+
+/* my profile page */
+.account { display: none; overflow-y: auto; min-height: 0; background: var(--bg); }
+body[data-view=account] .account { display: block; }
+#account-body { max-width: 760px; }
+.acct-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; }
+.acct-card .row { margin-bottom: 10px; } .acct-card .row label { flex: 0 0 140px; }
+.acct-card .row input { flex: 1; min-width: 0; }
+.acct-dl { display: grid; grid-template-columns: 140px 1fr; gap: 8px 12px; margin: 0; } .acct-dl dt { color: var(--muted); } .acct-dl dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 860px) { .account { overflow: visible; } .acct-card .row { flex-wrap: wrap; } .acct-card .row label { flex-basis: 100%; } .acct-dl { grid-template-columns: 1fr; gap: 2px; } .acct-dl dd { margin-bottom: 8px; } }

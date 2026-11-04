@@ -38,6 +38,7 @@
       <div class="acct" id="acct" hidden>
         <button class="btn" id="acct-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="acct-menu"><span class="who" id="who"></span> ▾</button>
         <div class="menu" id="acct-menu" role="menu">
+          <button class="menu-item" role="menuitem" id="btn-profile">My profile</button>
           <button class="menu-item" role="menuitem" id="btn-designs">My designs</button>
           <button class="menu-item" role="menuitem" id="btn-orders">Orders</button>
           <button class="menu-item" role="menuitem" id="btn-signout">Sign out</button>
@@ -169,6 +170,10 @@
       </div>
     </section>
 
+    <section class="account" id="account" aria-label="My profile">
+      <div class="m-wrap" id="account-body"></div>
+    </section>
+
     <section class="seller" id="seller" aria-label="Seller dashboard">
       <div class="m-wrap" id="seller-body"></div>
     </section>
@@ -268,7 +273,7 @@
   import { FontLoader } from 'three/addons/loaders/FontLoader.js';
   import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
   window.THREE = { ...THREE_NS, FontLoader, TextGeometry };
-  const scripts = ['gemstones', 'pricing-engine', 'stl-exporter', 'cad-engine', 'ai-designer', 'spec-sheet', 'cloud', 'marketplace', 'shop', 'seller', 'ui-controller'];
+  const scripts = ['gemstones', 'pricing-engine', 'stl-exporter', 'cad-engine', 'ai-designer', 'spec-sheet', 'cloud', 'marketplace', 'shop', 'seller', 'account', 'ui-controller'];
   for (const name of scripts) {
     await new Promise((resolve, reject) => {
       const s = document.createElement('script');

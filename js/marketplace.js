@@ -282,17 +282,17 @@ const AurixMarketplace = (() => {
 
   /* ----- tabs ----- */
   // push = add a browser-history entry, so the Back button returns to the marketplace
-  const HASH = { market: '#marketplace', sell: '#sell' };
+  const HASH = { market: '#marketplace', sell: '#sell', account: '#account' };
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const viewFromHash = () => {
     const m = /^#seller\/(.+)$/.exec(location.hash), id = m && UUID.test(m[1]) ? m[1] : null;
     if (id !== view.seller) { view.seller = id; loadSellerProfile(); }
-    return id || location.hash === '#marketplace' ? 'market' : location.hash === '#sell' ? 'sell' : 'studio';
+    return id || location.hash === '#marketplace' ? 'market' : location.hash === '#sell' ? 'sell' : location.hash === '#account' ? 'account' : 'studio';
   };
   function show(v, push = true) {
     document.body.dataset.view = v;
     if (v === 'market') document.body.classList.remove('from-market');
-    ['studio', 'market', 'sell'].forEach((t) => ctx.$('tab-' + t).setAttribute('aria-selected', v === t));
+    ['studio', 'market', 'sell'].forEach((t) => ctx.$('tab-' + t).setAttribute('aria-selected', v === t)); // the account page has no tab
     if (v === 'market') { if (!loaded) load(); else render(); }
     else if (v === 'studio') setTimeout(() => ctx.studio.resize(), 50);
     document.dispatchEvent(new CustomEvent('aurix:view', { detail: v }));
