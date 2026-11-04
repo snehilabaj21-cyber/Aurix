@@ -201,6 +201,7 @@
         <input type="email" id="auth-email" autocomplete="email" placeholder="you@studio.com" required>
         <label for="auth-pass">Password</label>
         <div class="auth-pw"><input type="password" id="auth-pass" autocomplete="current-password" minlength="8" placeholder="At least 8 characters" required><button type="button" id="auth-eye" aria-label="Show password" aria-pressed="false">Show</button></div>
+        <p class="auth-forgot"><button type="button" id="auth-forgot">Forgot your password?</button></p>
         <div class="auth-err" id="auth-err" role="alert"></div>
         <button class="auth-go" type="submit" id="auth-submit">Sign in</button>
         <p class="auth-alt"><span id="auth-alt-text">Don’t have an account?</span> <button type="button" id="auth-switch">Sign up</button></p>
@@ -235,6 +236,26 @@
     <div class="row"><label for="edit-desc">Description</label><textarea id="edit-desc" maxlength="600"></textarea></div>
     <div class="auth-err" id="edit-err" role="alert"></div>
     <div class="row" style="margin:12px 0 0"><button class="btn primary" type="submit" id="edit-save">Save changes</button><button class="btn" type="button" id="edit-cancel">Cancel</button></div>
+  </form>
+</div>
+<div class="modal dlg" id="forgot-modal" role="dialog" aria-modal="true" aria-label="Reset your password">
+  <form class="card" id="forgot-form" novalidate>
+    <button class="x-close" type="button" id="forgot-x" aria-label="Close">&times;</button>
+    <h3>Reset your password</h3>
+    <p class="shop-muted">Enter your account email and we will send you a link to choose a new password.</p>
+    <div class="row"><label for="forgot-email">Email</label><input type="text" id="forgot-email" inputmode="email" autocomplete="email" placeholder="you@studio.com"></div>
+    <div class="auth-err" id="forgot-err" role="alert"></div><p class="shop-muted" id="forgot-ok" role="status"></p>
+    <div class="row" style="margin:12px 0 0"><button class="btn primary" type="submit" id="forgot-send">Send reset link</button><button class="btn" type="button" id="forgot-cancel">Close</button></div>
+  </form>
+</div>
+<div class="modal dlg" id="reset-modal" role="dialog" aria-modal="true" aria-label="Choose a new password">
+  <form class="card" id="reset-form" novalidate>
+    <h3>Choose a new password</h3>
+    <p class="shop-muted">You are signed in with your reset link. Pick a new password to finish.</p>
+    <div class="row"><label for="reset-pass">New password</label><input type="password" id="reset-pass" autocomplete="new-password" minlength="8" placeholder="At least 8 characters"></div>
+    <div class="row"><label for="reset-pass2">Repeat it</label><input type="password" id="reset-pass2" autocomplete="new-password" minlength="8"></div>
+    <div class="auth-err" id="reset-err" role="alert"></div>
+    <div class="row" style="margin:12px 0 0"><button class="btn primary" type="submit" id="reset-save">Save new password</button><button class="btn" type="button" id="reset-cancel">Not now</button></div>
   </form>
 </div>
 <div class="modal dlg" id="shop-modal" role="dialog" aria-modal="true" aria-label="Cart and orders">

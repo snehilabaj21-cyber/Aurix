@@ -27,7 +27,7 @@ section.grp h3 { margin: 0 0 12px; font: 600 11px var(--sans); letter-spacing: .
 .row label { flex: 0 0 96px; color: var(--muted); }
 .row output { flex: 0 0 62px; text-align: right; font-variant-numeric: tabular-nums; }
 .row input[type=range] { flex: 1; accent-color: var(--gold); min-width: 0; }
-select, input[type=text], input[type=number], input[type=tel], textarea { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; }
+select, input[type=text], input[type=number], input[type=tel], input[type=password], textarea { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; }
 textarea { resize: vertical; min-height: 64px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 12px; transition: .15s; }
@@ -203,6 +203,7 @@ body.from-market[data-view=studio] .back-market { display: inline-block; }
 .auth-sub { margin: 0 0 26px; text-align: center; color: #6b6354; font-size: 13px; }
 .auth-form label { display: block; margin: 14px 0 6px; font-size: 12px; font-weight: 600; color: #3b3427; }
 #auth-form input { width: 100%; background: #fff; border: 1px solid #d9d2c5; border-radius: 10px; padding: 12px 14px; color: #000; }
+.auth-forgot { margin: 8px 0 0; text-align: right; } .auth-forgot button { background: none; border: 0; padding: 0; cursor: pointer; color: #6b6354; font-size: 12.5px; text-decoration: underline; text-underline-offset: 2px; } .auth-forgot button:hover { color: #1a1408; }
 #auth-form input::placeholder { color: #9a9185; }
 #auth-form input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; border-color: var(--gold); }
 .auth-pw { position: relative; } .auth-pw input { padding-right: 64px; }

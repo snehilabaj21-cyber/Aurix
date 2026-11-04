@@ -228,6 +228,7 @@
     $('auth-alt-text').textContent = up ? 'Already have an account?' : 'Don’t have an account?';
     $('auth-switch').textContent = up ? 'Sign in' : 'Sign up';
     $('auth-pass').autocomplete = up ? 'new-password' : 'current-password';
+    $('auth-forgot').parentElement.hidden = up;
     $('auth-err').textContent = '';
   };
   AurixCloud.onAuth((u) => {
@@ -237,6 +238,30 @@
     $('btn-designs').hidden = !u;
   });
   $('btn-profile').addEventListener('click', () => AurixMarketplace.show('account'));
+  /* forgot / reset password: the reset email comes from Supabase Auth (see the SendGrid SMTP setup) */
+  $('auth-forgot').addEventListener('click', () => { closeModal('auth-modal'); $('forgot-err').textContent = ''; $('forgot-ok').textContent = ''; $('forgot-email').value = $('auth-email').value.trim(); openModal('forgot-modal'); $('forgot-email').focus(); });
+  $('forgot-x').addEventListener('click', () => closeModal('forgot-modal')); $('forgot-cancel').addEventListener('click', () => closeModal('forgot-modal'));
+  $('forgot-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = $('forgot-email').value.trim(), err = $('forgot-err'), btn = $('forgot-send'); err.textContent = ''; $('forgot-ok').textContent = '';
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Enter the email address of your account.'; return; }
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try { await AurixCloud.resetPassword(email); $('forgot-ok').textContent = 'If an account exists for that email, a reset link is on its way. It can take a minute, and it may land in spam.'; toast('Reset link requested'); }
+    catch (ex) { err.textContent = /rate limit/i.test(ex.message) ? 'Too many requests. Wait a little and try again.' : (ex.message || 'Couldn’t send the reset link. Please try again.'); }
+    finally { btn.disabled = false; btn.textContent = 'Send reset link'; }
+  });
+  AurixCloud.onAuth((u, ev) => { if (ev === 'PASSWORD_RECOVERY') { $('reset-err').textContent = ''; openModal('reset-modal'); $('reset-pass').focus(); } });
+  $('reset-cancel').addEventListener('click', () => closeModal('reset-modal'));
+  $('reset-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const p1 = $('reset-pass').value, p2 = $('reset-pass2').value, err = $('reset-err'), btn = $('reset-save'); err.textContent = '';
+    if (p1.length < 8) { err.textContent = 'Use at least 8 characters.'; return; }
+    if (p1 !== p2) { err.textContent = 'The two passwords don’t match.'; return; }
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try { await AurixCloud.updatePassword(p1); closeModal('reset-modal'); $('reset-pass').value = ''; $('reset-pass2').value = ''; toast('Password updated. You are signed in.'); }
+    catch (ex) { err.textContent = ex.message || 'Couldn’t update the password. Please try again.'; }
+    finally { btn.disabled = false; btn.textContent = 'Save new password'; }
+  });
   $('btn-signout').addEventListener('click', () => AurixCloud.signOut().then(() => toast('Signed out')));
   AurixCloud.user().then((u) => { me = u; });
   $('btn-account').addEventListener('click', () => {
