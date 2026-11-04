@@ -11,7 +11,7 @@ const AurixCloud = (() => {
   // listener (they load orders, listings...) would otherwise leave sign-in hanging with no message.
   const onAuth = (fn) => db.auth.onAuthStateChange((_e, session) => {
     const u = session && session.user;
-    setTimeout(() => { try { Promise.resolve(fn(u)).catch((e) => console.error('auth listener failed', e)); } catch (e) { console.error('auth listener failed', e); } }, 0);
+    setTimeout(() => { try { Promise.resolve(fn(u, _e)).catch((e) => console.error('auth listener failed', e)); } catch (e) { console.error('auth listener failed', e); } }, 0);
   });
 
   async function signIn(email, password) {
@@ -23,6 +23,15 @@ const AurixCloud = (() => {
     if (error) throw error;
   }
   const signOut = () => db.auth.signOut();
+  // the reset email links back here; supabase-js then signs the visitor in with a recovery session (event PASSWORD_RECOVERY)
+  async function resetPassword(email) {
+    const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    if (error) throw error;
+  }
+  async function updatePassword(password) {
+    const { error } = await db.auth.updateUser({ password });
+    if (error) throw error;
+  }
 
   async function saveDesign(name, config, retailPrice, id) {
     const row = { name, config, retail_price: retailPrice };
@@ -151,5 +160,5 @@ const AurixCloud = (() => {
     if (error) throw error;
   }
 
-  return { user, onAuth, signIn, signUp, signOut, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike, placeOrder, listOrders, listSales, listMyListings, updateListing, setItemStatus, getAccount, saveAccount, likesSince, getProfile, saveProfile, listReviews, addReview, deleteReview };
+  return { user, onAuth, signIn, signUp, signOut, resetPassword, updatePassword, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike, placeOrder, listOrders, listSales, listMyListings, updateListing, setItemStatus, getAccount, saveAccount, likesSince, getProfile, saveProfile, listReviews, addReview, deleteReview };
 })();
