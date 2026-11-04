@@ -15,9 +15,15 @@ const AurixShop = (() => {
   const body = (html) => { ctx.$('shop-body').innerHTML = html; };
   const owns = (ref) => owned.has(ref);
 
+  let statuses = null; // order item id -> status, to spot deliveries that happen while the site is open
   async function refreshOwned() {
-    if (!me) { owned = new Set(); orders = []; return; }
-    try { orders = await AurixCloud.listOrders(); owned = new Set(orders.flatMap((o) => o.order_items.map((i) => i.listing_ref))); } catch (e) { /* orders table unavailable */ }
+    if (!me) { owned = new Set(); orders = []; statuses = null; return; }
+    try {
+      orders = await AurixCloud.listOrders(); owned = new Set(orders.flatMap((o) => o.order_items.map((i) => i.listing_ref)));
+      const now = {}; orders.forEach((o) => o.order_items.forEach((i) => { now[i.id] = i.status; }));
+      if (statuses) orders.forEach((o) => o.order_items.forEach((i) => { if (i.status === 'delivered' && statuses[i.id] && statuses[i.id] !== 'delivered') ctx.toast('Delivered: “' + i.title + '” is ready in your Orders.'); }));
+      statuses = now;
+    } catch (e) { /* orders table unavailable */ }
   }
 
   function add(it) {
@@ -72,6 +78,7 @@ const AurixShop = (() => {
         thumbnail: r.featured && safeImg(r.thumbnail) && r.thumbnail.length < 190000 ? r.thumbnail : null
       })));
       cart = []; saveCart(); await refreshOwned();
+      ctx.toast('Order placed! Order ' + orderNo(id) + ' is in your Orders.');
       body('<div class="shop-done"><div class="shop-check" aria-hidden="true">✓</div><h3>Order placed</h3><p class="shop-muted">Order ' + orderNo(id) + ' · demo order, no payment was taken.</p></div>' +
         rows.map((r, i) => '<div class="shop-row">' + thumb(r.thumbnail, r.title) + '<div class="meta"><b>' + esc(r.title) + '</b><span>by ' + esc(r.seller_name) + '</span></div>' +
           '<div class="shop-price">' + money(r.price) + '</div><button class="btn primary" data-act="open-cfg" data-i="' + i + '">Open in studio</button></div>').join('') +
@@ -125,7 +132,7 @@ const AurixShop = (() => {
       const b = e.target.closest('[data-act]'); if (!b) return;
       const act = b.dataset.act;
       if (act === 'close') close();
-      else if (act === 'remove') { remove(b.dataset.ref); cartView(); }
+      else if (act === 'remove') { remove(b.dataset.ref); ctx.toast('Removed from cart'); cartView(); }
       else if (act === 'cart') cartView();
       else if (act === 'checkout') { if (!me) { ctx.toast('Sign in to check out'); close(); ctx.openAuth(); } else checkoutView(); }
       else if (act === 'place') place(b);
@@ -137,6 +144,7 @@ const AurixShop = (() => {
     });
     AurixCloud.onAuth((u) => { me = u; ctx.$('btn-orders').hidden = !u; refreshOwned(); });
     AurixCloud.user().then((u) => { me = u; ctx.$('btn-orders').hidden = !u; refreshOwned(); });
+    setInterval(() => { if (me) refreshOwned(); }, 60000); // picks up deliveries without a reload
   }
 
   return { init, add, owns };
