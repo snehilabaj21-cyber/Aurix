@@ -103,6 +103,16 @@ const AurixCloud = (() => {
     if (!data.length) throw new Error('listing not found');
   }
 
+  /* private contact details (phone, mailing address): readable only by their owner */
+  async function getAccount(userId) {
+    const { data, error } = await db.from('account_details').select('full_name,phone,address_line1,address_line2,city,region,postal_code,country').eq('user_id', userId).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+  async function saveAccount(userId, d) {
+    const { error } = await db.from('account_details').upsert({ user_id: userId, ...d, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    if (error) throw error;
+  }
   async function setItemStatus(itemId, status) {
     const { data, error } = await db.from('order_items').update({ status }).eq('id', itemId).select('id');
     if (error) throw error;
@@ -141,5 +151,5 @@ const AurixCloud = (() => {
     if (error) throw error;
   }
 
-  return { user, onAuth, signIn, signUp, signOut, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike, placeOrder, listOrders, listSales, listMyListings, updateListing, setItemStatus, likesSince, getProfile, saveProfile, listReviews, addReview, deleteReview };
+  return { user, onAuth, signIn, signUp, signOut, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike, placeOrder, listOrders, listSales, listMyListings, updateListing, setItemStatus, getAccount, saveAccount, likesSince, getProfile, saveProfile, listReviews, addReview, deleteReview };
 })();

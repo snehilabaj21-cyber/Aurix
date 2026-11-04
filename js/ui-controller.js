@@ -236,6 +236,7 @@
     $('btn-account').hidden = !!u; $('acct').hidden = !u;
     $('btn-designs').hidden = !u;
   });
+  $('btn-profile').addEventListener('click', () => AurixMarketplace.show('account'));
   $('btn-signout').addEventListener('click', () => AurixCloud.signOut().then(() => toast('Signed out')));
   AurixCloud.user().then((u) => { me = u; });
   $('btn-account').addEventListener('click', () => {
@@ -312,7 +313,7 @@
   hdr.addEventListener('click', (e) => { if (e.target.closest('.top-tools .btn, .exp .btn:not(.caret), .exp .menu-item, .acct .menu-item, #btn-account')) { hdr.classList.remove('menu-open'); menuBtn.setAttribute('aria-expanded', 'false'); } });
 
   const openAuth = () => { setAuthMode(false); openModal('auth-modal'); };
-  [AurixShop, AurixSeller].forEach((m) => { try { m.init({ $, toast, openAuth }); } catch (e) { console.error('module failed to start', e); } });
+  [AurixShop, AurixSeller, AurixAccount].forEach((m) => { try { m.init({ $, toast, openAuth }); } catch (e) { console.error('module failed to start', e); } });
 
   window.aurix = studio; // handy for debugging in the console
 })();
