@@ -72,8 +72,6 @@ body.store .store-cta { display: flex; gap: 8px; margin-top: 12px; }
 body.store .store-cta .btn { flex: 1; }
 body.store .hud.quote { left: 50%; transform: translateX(-50%); text-align: center; }
 
-.toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); background: var(--gold); color: #1a1408; padding: 10px 18px; border-radius: 999px; opacity: 0; transition: .25s; pointer-events: none; z-index: 60; font-weight: 600; }
-.toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,.72); display: none; align-items: flex-start; justify-content: center; overflow: auto; padding: 24px; z-index: 50; }
 .modal.open { display: flex; }
@@ -102,7 +100,7 @@ body.store .hud.quote { left: 50%; transform: translateX(-50%); text-align: cent
   .hud.quote { min-width: 0; right: 18px; }
 }
 @media print {
-  body { overflow: visible; background: #fff; } .app, .toast { display: none; }
+  body { overflow: visible; background: #fff; } .app, .toasts { display: none; }
   .modal { position: static; display: block; background: none; padding: 0; } .modal .bar-actions { display: none; }
   .spec-page { width: 100%; padding: 0; }
 }
@@ -314,3 +312,17 @@ body[data-view=sell] .seller { display: block; }
 .m-profile { text-align: center; margin-bottom: 24px; } .m-profile > .btn { display: block; margin: 0 auto 18px; }
 .m-profile h2 { margin: 8px 0 6px; font: 600 40px/1.1 var(--serif); color: var(--gold-2); } .m-profile p { margin: 4px auto; max-width: 560px; color: var(--text); } .m-profile .m-sub { color: var(--muted); }
 .m-av-lg { width: 64px; height: 64px; font-size: 26px; margin: 0 auto; }
+
+/* notifications */
+.toasts { position: fixed; right: 20px; bottom: 20px; z-index: 90; display: flex; flex-direction: column; gap: 10px; width: min(380px, calc(100vw - 32px)); pointer-events: none; }
+.note { pointer-events: auto; display: flex; align-items: flex-start; gap: 10px; padding: 12px 10px 12px 12px; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--ok); border-radius: 10px; box-shadow: 0 14px 34px rgba(0,0,0,.55); animation: note-in .22s ease-out; }
+.note.out { opacity: 0; transform: translateX(16px); transition: .18s; }
+.note-ic { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; line-height: 1; background: var(--ok); color: #0e1a12; }
+.note-msg { flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: 1.4; }
+.note-x { flex: none; background: transparent; border: 0; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 4px; border-radius: 4px; }
+.note-x:hover, .note-x:focus-visible { color: var(--text); outline: none; background: var(--panel-2); }
+.note-info { border-left-color: var(--gold); } .note-info .note-ic { background: var(--gold); color: #1a1408; }
+.note-error { border-left-color: var(--err); } .note-error .note-ic { background: var(--err); color: #1c0b08; }
+@keyframes note-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+@media (max-width: 520px) { .toasts { right: 16px; left: 16px; bottom: 16px; width: auto; } }
+@media (prefers-reduced-motion: reduce) { .note { animation: none; } .note.out { transition: none; } }

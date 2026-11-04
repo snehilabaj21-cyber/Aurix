@@ -3,8 +3,23 @@
   const $ = (id) => document.getElementById(id);
   const studio = new CADStudio($('viewport'));
   const cfg = () => studio.config;
-  let toastTimer;
-  const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400); };
+  /* notifications: stacked, typed (success / info / error), dismissible, paused while hovered.
+     The type is inferred from the message unless passed: toast('text', 'error') */
+  const NOTE_ICON = { success: '✓', info: 'i', error: '!' }, NOTE_MS = { success: 4000, info: 4500, error: 7000 };
+  const noteType = (m) => /^Couldn[’']t|failed|not exported/i.test(m) ? 'error' : /^Sign in to|^Already|^You already|own design|no longer|^Describe|^Demo/i.test(m) ? 'info' : 'success';
+  const toast = (msg, type = noteType(String(msg))) => {
+    const box = $('toasts'), text = String(msg);
+    const dup = [...box.children].find((n) => n.querySelector('.note-msg').textContent === text);
+    if (dup) dup.remove();
+    while (box.children.length >= 4) box.firstElementChild.remove();
+    const n = document.createElement('div'); n.className = 'note note-' + type; n.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    n.innerHTML = '<span class="note-ic" aria-hidden="true">' + NOTE_ICON[type] + '</span><span class="note-msg"></span><button class="note-x" type="button" aria-label="Dismiss">&times;</button>';
+    n.querySelector('.note-msg').textContent = text;
+    let timer; const gone = () => { clearTimeout(timer); n.classList.add('out'); setTimeout(() => n.remove(), 180); };
+    const arm = () => { clearTimeout(timer); timer = setTimeout(gone, NOTE_MS[type]); };
+    n.addEventListener('mouseenter', () => clearTimeout(timer)); n.addEventListener('mouseleave', arm); n.querySelector('.note-x').addEventListener('click', gone);
+    box.appendChild(n); arm();
+  };
 
   /* ----- build controls ----- */
   const shapeGrid = (el, cfgKey) => Object.entries(GemstoneLibrary.SHAPES).forEach(([key, def]) => {
@@ -239,8 +254,8 @@
     try {
       if (signingUp) {
         await AurixCloud.signUp(email, pass);
-        toast('Account created');
-      } else { await AurixCloud.signIn(email, pass); toast('Signed in'); }
+        toast('Welcome to Aurix! Your account is ready.');
+      } else { await AurixCloud.signIn(email, pass); toast('Signed in successfully'); }
       closeModal('auth-modal'); $('auth-pass').value = '';
     } catch (err) { $('auth-err').textContent = err.message; }
   });

@@ -1,6 +1,7 @@
 /* Aurix — seller dashboard: stats, a 14-day sales/likes chart, your public profile, your listings (draft, edit, remove)
    and sales with delivery status. Revenue is demo revenue: checkout takes no payment. */
 const AurixSeller = (() => {
+  let knownSales = null; // sale ids seen so far; null until the first load, so old sales are not announced
   let ctx, me = null, listings = [], sales = [], likes = [], profile = null, error = '', editing = null, seenAt = 0, chartKind = 'sales';
 
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -86,7 +87,7 @@ const AurixSeller = (() => {
     seenAt = getSeen(); body().innerHTML = '<p class="m-empty">Loading…</p>';
     await refresh();
     if (!inView()) return;
-    render(); setSeen(Date.now()); badge();
+    render(); setSeen(Date.now()); badge(); knownSales = new Set(sales.map((s) => s.id));
   }
 
   const changed = () => document.dispatchEvent(new CustomEvent('aurix:listings-changed'));
@@ -149,12 +150,18 @@ const AurixSeller = (() => {
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeEdit(); });
     const onUser = async (u) => {
       me = u; ctx.$('tab-sell').hidden = !u;
-      await refresh(); badge(); if (inView()) { seenAt = me ? getSeen() : 0; render(); if (me) setSeen(Date.now()); }
+      await refresh(); badge(); knownSales = new Set(sales.map((s) => s.id)); if (inView()) { seenAt = me ? getSeen() : 0; render(); if (me) setSeen(Date.now()); }
     };
     AurixCloud.onAuth(onUser);
     if (inView()) render();
     // new sales show up on the badge without reloading the page
-    setInterval(async () => { if (me && !inView()) { await refresh(); badge(); } }, 60000);
+    setInterval(async () => {
+      if (!me || inView() || !knownSales) return;
+      await refresh(); badge();
+      const fresh = sales.filter((s) => !knownSales.has(s.id)); sales.forEach((s) => knownSales.add(s.id));
+      fresh.slice(0, 3).forEach((s) => ctx.toast('New sale: “' + s.title + '” for ' + money(s.price) + '. See it on your Sell tab.', 'info'));
+      if (fresh.length > 3) ctx.toast(fresh.length - 3 + ' more new sales on your Sell tab', 'info');
+    }, 60000);
   }
 
   return { init };
