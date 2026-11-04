@@ -256,7 +256,7 @@ const AurixMarketplace = (() => {
     const row = { seller_name: seller, title, status: draft ? 'draft' : 'published', description: $('pub-desc').value.trim().slice(0, 600), product: studio.config.product, price: Math.round(price * 100) / 100, config: { ...studio.config }, thumbnail: publishThumb };
     const btns = [$('pub-submit'), $('pub-draft')]; btns.forEach((b) => { b.disabled = true; });
     try {
-      if (mode === 'cloud') await AurixCloud.publishListing(row);
+      if (mode === 'cloud') await within(AurixCloud.publishListing(row), 20000);
       else {
         delete row.status;
         const mine = readLocal(LOCAL_KEY, []);
@@ -268,7 +268,7 @@ const AurixMarketplace = (() => {
       ctx.toast('Published to the marketplace');
       view.mine = false; view.cat = 'all'; view.sort = 'new'; ctx.$('market-sort').value = 'new';
       show('market'); await load();
-    } catch (ex) { err.textContent = 'Couldn’t publish: ' + ex.message; }
+    } catch (ex) { err.textContent = ex.message === 'timed out' ? 'Publishing is taking too long. Check your connection, close other Aurix tabs, then try again.' : 'Couldn’t publish: ' + ex.message; }
     btns.forEach((b) => { b.disabled = false; });
   }
   async function removeListing(it) {

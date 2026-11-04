@@ -2,7 +2,9 @@
 const AurixCloud = (() => {
   const SUPABASE_URL = 'https://pmabhsalknzgnxcklfva.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_Qa50xuPDNN01uWqQfmxQ5w_h5ddIHmW';
-  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // supabase-js serialises auth work across browser tabs with a lock. A tab that holds it forever (an old or frozen tab)
+  // makes every request in the other tabs wait silently, so run without the cross-tab lock.
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { lock: async (_name, _acquireTimeout, fn) => await fn() } });
 
   const user = () => db.auth.getUser().then(({ data }) => data.user);
   // Listeners run after the auth call finishes: supabase-js awaits whatever this callback returns, so a slow or failing
