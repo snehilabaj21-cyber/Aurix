@@ -23,12 +23,13 @@ const AurixSeller = (() => {
 
   async function refresh() {
     if (!me) { listings = []; sales = []; likes = []; profile = null; return; }
-    const since = new Date(Date.now() - 14 * 864e5).toISOString();
-    try {
-      [listings, sales, profile] = await Promise.all([AurixCloud.listMyListings(me.id), AurixCloud.listSales(me.id), AurixCloud.getProfile(me.id)]);
-      likes = await AurixCloud.likesSince(listings.map((l) => l.id), since).catch(() => []);
-      error = '';
-    } catch (e) { error = e.message; }
+    // each part loads on its own, so one failing or slow request can't blank the whole dashboard
+    const since = new Date(Date.now() - 14 * 864e5).toISOString(), problems = [];
+    const part = (name, p, fallback) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('timed out')), 15000))])
+      .catch((e) => { problems.push(name + ': ' + (e.message || e)); console.error('seller dashboard: ' + name, e); return fallback; });
+    [listings, sales, profile] = await Promise.all([part('listings', AurixCloud.listMyListings(me.id), []), part('sales', AurixCloud.listSales(me.id), []), part('profile', AurixCloud.getProfile(me.id), null)]);
+    likes = await part('likes', AurixCloud.likesSince(listings.map((l) => l.id), since), []);
+    error = problems.join('; ');
   }
 
   /* last 14 days of sales or likes as a small bar chart */
@@ -57,6 +58,12 @@ const AurixSeller = (() => {
 
   function render() {
     if (!inView()) return;
+    try { draw(); } catch (e) {
+      console.error('seller dashboard failed to draw', e);
+      body().innerHTML = '<div class="m-hero"><h2>Seller dashboard</h2></div><div class="m-notice" role="alert">Couldn’t show the dashboard: ' + esc(e.message) + '</div><div class="sell-cta"><button class="btn primary" data-act="retry">Try again</button></div>';
+    }
+  }
+  function draw() {
     if (!me) {
       body().innerHTML = '<div class="m-hero"><h2>Seller dashboard</h2><p class="m-sub">Sign in to see your listings and sales.</p></div><div class="sell-cta"><button class="btn primary" data-act="signin">Sign in</button></div>';
       return;
@@ -141,6 +148,7 @@ const AurixSeller = (() => {
       else if (act === 'chart') { chartKind = b.dataset.kind; render(); }
       else if (act === 'save-profile') saveProfile(b);
       else if (act === 'signin') ctx.openAuth();
+      else if (act === 'retry') open();
       else if (act === 'studio') AurixMarketplace.show('studio');
     });
     ctx.$('edit-form').addEventListener('submit', saveEdit);
