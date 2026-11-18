@@ -1,5 +1,5 @@
 /* Aurix — seller dashboard: stats, a 14-day sales/likes chart, your public profile, your listings (draft, edit, remove)
-   and sales with delivery status. Revenue is demo revenue: checkout takes no payment. */
+   and sales with delivery status. Revenue is what buyers paid at checkout. */
 const AurixSeller = (() => {
   let knownSales = null; // sale ids seen so far; null until the first load, so old sales are not announced
   let ctx, me = null, listings = [], sales = [], likes = [], profile = null, error = '', editing = null, seenAt = 0, chartKind = 'sales';
@@ -81,9 +81,9 @@ const AurixSeller = (() => {
     const live = listings.filter((l) => l.status !== 'draft'), soldBy = {}; sales.forEach((s) => { soldBy[s.listing_ref] = (soldBy[s.listing_ref] || 0) + 1; });
     const likeTotal = live.reduce((n, l) => n + l.likes, 0), revenue = sales.reduce((n, s) => n + Number(s.price), 0), toDeliver = sales.filter((s) => s.status !== 'delivered').length;
     const stat = (label, value) => '<div class="sell-stat"><span>' + label + '</span><b>' + value + '</b></div>';
-    body().innerHTML = '<div class="m-hero"><h2>Seller dashboard</h2><p class="m-sub">Manage your listings and see who’s buying. Revenue is demo revenue: no payment is taken.</p></div>' +
+    body().innerHTML = '<div class="m-hero"><h2>Seller dashboard</h2><p class="m-sub">Manage your listings and see who’s buying. Revenue is what buyers have paid through checkout; payouts aren’t automated yet.</p></div>' +
       (error ? '<div class="m-notice" role="alert">Couldn’t load everything: ' + esc(error) + '</div>' : '') +
-      '<div class="sell-stats">' + stat('Active listings', live.length) + stat('Total likes', likeTotal) + stat('Sales', sales.length) + stat('To deliver', toDeliver) + stat('Demo revenue', money(revenue)) + '</div>' +
+      '<div class="sell-stats">' + stat('Active listings', live.length) + stat('Total likes', likeTotal) + stat('Sales', sales.length) + stat('To deliver', toDeliver) + stat('Revenue', money(revenue)) + '</div>' +
       chart() + profileCard() +
       '<h3 class="sell-h">Your listings</h3>' + (listings.length ? listings.map((l) => '<div class="shop-row sell-row">' +
         '<img class="shop-img" alt="' + esc(l.title) + '"' + (safeImg(l.thumbnail) ? ' src="' + safeImg(l.thumbnail) + '"' : '') + '>' +

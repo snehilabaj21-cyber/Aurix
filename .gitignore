@@ -1,1 +1,5 @@
 .vercel
+
+# never commit notes containing API keys
+*API keys*.txt
+*api keys*.txt

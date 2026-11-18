@@ -78,12 +78,21 @@ const AurixCloud = (() => {
     if (error) throw error;
   }
 
-  /* demo checkout: no payment is taken (see supabase/migrations/*_orders.sql) */
-  async function placeOrder(items, share) {
-    const { data, error } = await db.rpc('place_order', { p_items: items, p_share: !!share });
-    if (error) throw error;
+  /* payments: cards through Stripe, via the stripe-checkout edge function.
+     The function prices the cart itself and only creates the order after the money is captured. */
+  async function pay(body) {
+    const { data, error } = await db.functions.invoke('stripe-checkout', { body });
+    if (error) {
+      let msg = error.message, retry = false;
+      try { const j = await error.context.json(); if (j.error) msg = j.error; retry = !!j.retry; } catch (e) { /* keep the generic message */ }
+      throw Object.assign(new Error(msg), { retry });
+    }
+    if (data && data.error) throw new Error(data.error);
     return data;
   }
+  const paymentConfig = () => pay({ action: 'config' });
+  const payCreate = (items, share) => pay({ action: 'create', items, share: !!share });
+  const payComplete = (paymentId) => pay({ action: 'complete', id: paymentId });
   async function listOrders() {
     const { data, error } = await db.from('orders')
       .select('id,created_at,order_items(id,listing_ref,title,seller_name,price,config,thumbnail,status,shared_contact)')
@@ -160,5 +169,5 @@ const AurixCloud = (() => {
     if (error) throw error;
   }
 
-  return { user, onAuth, signIn, signUp, signOut, resetPassword, updatePassword, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike, placeOrder, listOrders, listSales, listMyListings, updateListing, setItemStatus, getAccount, saveAccount, likesSince, getProfile, saveProfile, listReviews, addReview, deleteReview };
+  return { user, onAuth, signIn, signUp, signOut, resetPassword, updatePassword, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike, paymentConfig, payCreate, payComplete, listOrders, listSales, listMyListings, updateListing, setItemStatus, getAccount, saveAccount, likesSince, getProfile, saveProfile, listReviews, addReview, deleteReview };
 })();

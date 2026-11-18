@@ -234,6 +234,7 @@ body.from-market[data-view=studio] .back-market { display: inline-block; }
 .shop-actions { justify-content: flex-end; gap: 8px; margin: 14px 0 0; flex-wrap: wrap; }
 .shop-demo { background: var(--panel-2); border-left: 2px solid var(--warn); border-radius: 4px; padding: 10px 14px; font-size: 12px; color: var(--muted); margin-bottom: 14px; } .shop-demo b { color: var(--text); }
 .shop-sec { margin: 14px 0; }
+.shop-pay { display: grid; gap: 12px; margin-top: 10px; } .shop-paybtn { width: 100%; padding: 12px; font-size: 15px; } .shop-secure { font-size: 12px; text-align: center; margin: 0; }
 .shop-done { text-align: center; padding: 6px 0 10px; } .shop-done h3 { padding: 0; margin-bottom: 4px; }
 .shop-check { width: 44px; height: 44px; margin: 0 auto 10px; border-radius: 50%; background: var(--gold); color: #1a1408; display: grid; place-items: center; font-size: 24px; font-weight: 600; }
 .shop-tabs { display: flex; gap: 4px; margin: -6px 0 12px; border-bottom: 1px solid var(--line); } .shop-tabs .tab { padding: 8px 12px; }

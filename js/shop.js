@@ -1,5 +1,5 @@
-/* Aurix — demo shop: cart, checkout, orders and seller sales. No payment is taken: placing an order only records it
-   (supabase/migrations/*_orders.sql). The checkout step is where a real payment provider would go later. */
+/* Aurix — shop: cart, checkout, orders and seller sales. Payment is a Stripe card form; the order is only created on the
+   server after Stripe confirms the payment (supabase/functions/stripe-checkout, migrations/*_payments.sql, *_stripe.sql). */
 const AurixShop = (() => {
   const KEY = 'aurix.cart';
   let ctx, cart = [], owned = new Set(), me = null, orders = [];
@@ -68,35 +68,74 @@ const AurixShop = (() => {
       : hasContact ? '<div class="shop-sec"><h4>Contact details</h4><label class="shop-share"><input type="checkbox" id="shop-share"><span>Share my contact details with the seller so they can reach me about this order.</span></label>' +
         '<p class="shop-muted">They would see: ' + esc(preview) + '. Only the seller of each design sees them, and only for this order.</p></div>'
       : '<div class="shop-sec"><h4>Contact details</h4><p class="shop-muted">Sellers only get your phone number or address if you choose to share them. Add them to <button class="linklike" type="button" data-act="profile">My profile</button> if you want that option.</p></div>';
-    body('<h3>Checkout</h3><div class="shop-demo" role="note"><b>Demo checkout.</b> No payment is taken and no money changes hands.</div>' +
+    body('<h3>Checkout</h3>' +
       '<div class="shop-sec"><h4>Order summary</h4>' + rows.map((r) => '<div class="shop-row">' + thumb(r.thumbnail, r.title) + '<div class="meta"><b>' + esc(r.title) + '</b><span>by ' + esc(r.seller_name) + '</span></div><div class="shop-price">' + money(r.price) + '</div></div>').join('') + '</div>' +
-      '<div class="shop-sec"><h4>Payment</h4><p class="shop-muted">Demo payment (no card needed)</p></div>' +
-      '<div class="shop-sec"><h4>Delivery</h4><p class="shop-muted">Digital: designs open in your studio straight after you place the order.</p></div>' + contactSec +
+      '<div class="shop-sec"><h4>Payment</h4><p class="shop-muted">Pay with a debit or credit card.</p>' +
+      '<div id="shop-pay" class="shop-pay"><p class="shop-muted">Loading payment options…</p></div></div>' +
+      '<div class="shop-sec"><h4>Delivery</h4><p class="shop-muted">Digital: designs open in your studio straight after you pay.</p></div>' + contactSec +
       '<div class="shop-total"><span>Order total</span><b>' + money(total(rows)) + '</b></div><div class="auth-err" id="shop-err" role="alert"></div>' +
-      '<div class="row shop-actions"><button class="btn" data-act="cart">Back to cart</button><button class="btn primary" data-act="place">Place order</button></div>');
+      '<div class="row shop-actions"><button class="btn" data-act="cart">Back to cart</button></div>');
+    mountPay(rows);
   }
 
-  async function place(btn) {
-    const err = ctx.$('shop-err'); err.textContent = ''; btn.disabled = true;
-    const share = !!(ctx.$('shop-share') && ctx.$('shop-share').checked);
+  /* ----- payment: Stripe card form (Payment Element) on this page ----- */
+  let stripeJs = null;
+  function loadStripe() {
+    if (window.Stripe) return Promise.resolve();
+    if (!stripeJs) stripeJs = new Promise((resolve, reject) => {
+      const s = document.createElement('script'); s.src = 'https://js.stripe.com/v3/';
+      s.onload = resolve; s.onerror = () => { stripeJs = null; reject(new Error('Couldn’t reach Stripe. Check your connection and try again.')); };
+      document.head.appendChild(s);
+    });
+    return stripeJs;
+  }
+
+  async function mountPay(rows) {
+    const box = ctx.$('shop-pay'), err = ctx.$('shop-err');
+    const items = rows.map((r) => ({ ref: r.id, config: r.featured ? r.config : null, thumbnail: r.featured && safeImg(r.thumbnail) && r.thumbnail.length < 190000 ? r.thumbnail : null }));
     try {
-      const { rows } = await cartRows();
-      if (!rows.length) return cartView();
-      const id = await AurixCloud.placeOrder(rows.map((r) => ({
-        ref: r.id, title: r.title, seller_name: r.seller_name, price: r.price, config: r.config,
-        thumbnail: r.featured && safeImg(r.thumbnail) && r.thumbnail.length < 190000 ? r.thumbnail : null
-      })), share);
-      cart = []; saveCart(); await refreshOwned();
-      ctx.toast('Order placed! Order ' + orderNo(id) + ' is in your Orders.');
-      body('<div class="shop-done"><div class="shop-check" aria-hidden="true">✓</div><h3>Order placed</h3><p class="shop-muted">Order ' + orderNo(id) + ' · demo order, no payment was taken.</p>' + (share ? '<p class="shop-muted">Your contact details were shared with the seller.</p>' : '') + '</div>' +
-        rows.map((r, i) => '<div class="shop-row">' + thumb(r.thumbnail, r.title) + '<div class="meta"><b>' + esc(r.title) + '</b><span>by ' + esc(r.seller_name) + '</span></div>' +
-          '<div class="shop-price">' + money(r.price) + '</div><button class="btn primary" data-act="open-cfg" data-i="' + i + '">Open in studio</button></div>').join('') +
-        '<div class="row shop-actions"><button class="btn" data-act="close">Keep browsing</button><button class="btn" data-act="orders">View orders</button></div>');
-      lastRows = rows;
+      const cfg = await AurixCloud.paymentConfig();
+      if (!cfg.configured) { box.innerHTML = '<p class="shop-muted">Payments aren’t switched on for this site yet. Please check back soon.</p>'; return; }
+      await loadStripe();
+      if (!ctx.$('shop-pay')) return; // the buyer left checkout while Stripe was loading
+      const stripe = Stripe(cfg.publishableKey), amount = Math.round(total(rows) * 100);
+      const elements = stripe.elements({ mode: 'payment', amount, currency: cfg.currency, appearance: {
+        theme: 'night', variables: { colorPrimary: '#c9a45c', colorBackground: '#1d1a17', colorText: '#ece6dc', colorTextSecondary: '#9a9185', colorDanger: '#e0675a', fontFamily: 'Inter, system-ui, sans-serif', borderRadius: '8px' } } });
+      box.innerHTML = '<div id="shop-card"></div><button class="btn primary shop-paybtn" id="shop-paybtn" type="button">Pay ' + money(total(rows)) + '</button>' +
+        '<p class="shop-muted shop-secure">Payments are processed securely by Stripe. Aurix never sees your card details.</p>';
+      elements.create('payment', { layout: 'tabs' }).mount('#shop-card');
+      const btn = ctx.$('shop-paybtn');
+      btn.addEventListener('click', async () => {
+        err.textContent = ''; btn.disabled = true; btn.textContent = 'Processing…';
+        const reset = () => { btn.disabled = false; btn.textContent = 'Pay ' + money(total(rows)); };
+        try {
+          const v = await elements.submit();
+          if (v.error) { err.textContent = v.error.message; return reset(); }
+          const share = !!(ctx.$('shop-share') && ctx.$('shop-share').checked);
+          const { client_secret, id } = await AurixCloud.payCreate(items, share);
+          const res = await stripe.confirmPayment({ elements, clientSecret: client_secret, confirmParams: { return_url: location.href }, redirect: 'if_required' });
+          if (res.error) { err.textContent = res.error.message; return reset(); }
+          btn.textContent = 'Confirming…';
+          const r = await AurixCloud.payComplete(id);
+          await done(rows, r.order_id, share, r.method);
+        } catch (e) { err.textContent = e.message; reset(); }
+      });
     } catch (e) {
-      err.textContent = e.code === '23505' ? 'You already own one of these designs. Remove it from your cart and try again.' : 'Couldn’t place the order: ' + e.message;
-      btn.disabled = false;
+      box.innerHTML = '';
+      err.textContent = /Edge Function/i.test(e.message) ? 'Payments aren’t available right now. Please try again later.' : 'Couldn’t load payment options: ' + e.message;
+      console.error('payment options failed', e);
     }
+  }
+
+  async function done(rows, id, share, method) {
+    cart = []; saveCart(); await refreshOwned();
+    ctx.toast('Payment received! Order ' + orderNo(id) + ' is in your Orders.');
+    const via = method === 'card' ? 'card' : '';
+    body('<div class="shop-done"><div class="shop-check" aria-hidden="true">✓</div><h3>Thanks, your order is confirmed</h3><p class="shop-muted">Order ' + orderNo(id) + (via ? ' · paid with ' + via : '') + ' · a confirmation is on its way to your email.</p>' + (share ? '<p class="shop-muted">Your contact details were shared with the seller.</p>' : '') + '</div>' +
+      rows.map((r, i) => '<div class="shop-row">' + thumb(r.thumbnail, r.title) + '<div class="meta"><b>' + esc(r.title) + '</b><span>by ' + esc(r.seller_name) + '</span></div>' +
+        '<div class="shop-price">' + money(r.price) + '</div><button class="btn primary" data-act="open-cfg" data-i="' + i + '">Open in studio</button></div>').join('') +
+      '<div class="row shop-actions"><button class="btn" data-act="close">Keep browsing</button><button class="btn" data-act="orders">View orders</button></div>');
+    lastRows = rows;
   }
   let lastRows = [];
 
@@ -117,7 +156,7 @@ const AurixShop = (() => {
         const sales = await AurixCloud.listSales(me.id);
         body('<h3>Orders</h3>' + tabs + (sales.length ? '<div class="shop-total"><span>' + sales.length + (sales.length === 1 ? ' sale' : ' sales') + ' of your designs</span><b>' + money(total(sales)) + '</b></div>' +
           sales.map((s) => '<div class="shop-row"><div class="meta"><b>' + esc(s.title) + '</b><span>' + day(s.created_at) + '</span></div><div class="shop-price">' + money(s.price) + '</div></div>').join('') +
-          '<p class="shop-muted">Demo sales: no money was collected.</p>' : '<p class="m-empty">No one has ordered your designs yet.</p>') + '<div class="row shop-actions"><button class="btn" data-act="close">Close</button></div>');
+          '<p class="shop-muted">Buyers pay Aurix by card through Stripe. Payouts to sellers aren’t automated yet.</p>' : '<p class="m-empty">No one has ordered your designs yet.</p>') + '<div class="row shop-actions"><button class="btn" data-act="close">Close</button></div>');
       }
     } catch (e) { body('<h3>Orders</h3>' + tabs + '<p class="shop-muted">Couldn’t load: ' + esc(e.message) + '</p>'); }
   }
@@ -145,7 +184,6 @@ const AurixShop = (() => {
       else if (act === 'cart') cartView();
       else if (act === 'profile') { close(); market().show('account'); }
       else if (act === 'checkout') { if (!me) { ctx.toast('Sign in to check out'); close(); ctx.openAuth(); } else checkoutView(); }
-      else if (act === 'place') place(b);
       else if (act === 'orders') ordersView('orders');
       else if (act === 'tab') ordersView(b.dataset.tab);
       else if (act === 'open-cfg') { close(); market().openConfig(lastRows[+b.dataset.i].config); }
