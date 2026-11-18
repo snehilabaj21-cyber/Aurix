@@ -41,6 +41,7 @@
           <button class="menu-item" role="menuitem" id="btn-profile">My profile</button>
           <button class="menu-item" role="menuitem" id="btn-designs">My designs</button>
           <button class="menu-item" role="menuitem" id="btn-orders">Orders</button>
+          <button class="menu-item" role="menuitem" id="btn-sub" hidden>Manage subscription</button>
           <button class="menu-item" role="menuitem" id="btn-signout">Sign out</button>
         </div>
       </div>
@@ -257,6 +258,21 @@
     <div class="auth-err" id="reset-err" role="alert"></div>
     <div class="row" style="margin:12px 0 0"><button class="btn primary" type="submit" id="reset-save">Save new password</button><button class="btn" type="button" id="reset-cancel">Not now</button></div>
   </form>
+</div>
+<div class="modal dlg" id="sub-modal" role="dialog" aria-modal="true" aria-labelledby="sub-title">
+  <div class="card sub">
+    <button class="x-close" type="button" id="sub-x" aria-label="Close">&times;</button>
+    <h3 id="sub-title">Unlock STL export</h3>
+    <p class="sub-price"><b>$20</b> / month</p>
+    <ul class="sub-list">
+      <li>Download casting-ready and true-size STL files, as many as you like</li>
+      <li>Works for every design: your own and ones you’ve bought</li>
+      <li>Cancel any time from your account menu</li>
+    </ul>
+    <div class="auth-err" id="sub-err" role="alert"></div>
+    <div class="row" style="margin:12px 0 0"><button class="btn primary" type="button" id="sub-go">Subscribe for $20/month</button><button class="btn" type="button" id="sub-later">Not now</button></div>
+    <p class="shop-muted sub-note">You’ll pay on Stripe’s secure page. Aurix never sees your card details.</p>
+  </div>
 </div>
 <div class="modal dlg" id="shop-modal" role="dialog" aria-modal="true" aria-label="Cart and orders">
   <div class="card wide shop">

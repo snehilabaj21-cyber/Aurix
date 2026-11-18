@@ -93,6 +93,17 @@ const AurixCloud = (() => {
   const paymentConfig = () => pay({ action: 'config' });
   const payCreate = (items, share) => pay({ action: 'create', items, share: !!share });
   const payComplete = (paymentId) => pay({ action: 'complete', id: paymentId });
+
+  /* subscription ($20/month, Stripe Billing): unlocks STL export. The row is written only by the server from Stripe's data. */
+  async function getSubscription(userId) {
+    const { data, error } = await db.from('subscriptions').select('status,current_period_end,cancel_at_period_end').eq('user_id', userId).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+  const isSubscribed = (s) => !!s && (s.status === 'active' || s.status === 'trialing');
+  const syncSubscription = () => pay({ action: 'sub_sync' });
+  const startSubscription = async () => (await pay({ action: 'subscribe', return_url: location.origin + '/' })).url;
+  const manageSubscription = async () => (await pay({ action: 'manage', return_url: location.origin + '/' })).url;
   async function listOrders() {
     const { data, error } = await db.from('orders')
       .select('id,created_at,order_items(id,listing_ref,title,seller_name,price,config,thumbnail,status,shared_contact)')
@@ -169,5 +180,5 @@ const AurixCloud = (() => {
     if (error) throw error;
   }
 
-  return { user, onAuth, signIn, signUp, signOut, resetPassword, updatePassword, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike, paymentConfig, payCreate, payComplete, listOrders, listSales, listMyListings, updateListing, setItemStatus, getAccount, saveAccount, likesSince, getProfile, saveProfile, listReviews, addReview, deleteReview };
+  return { user, onAuth, signIn, signUp, signOut, resetPassword, updatePassword, saveDesign, listDesigns, deleteDesign, listListings, myLikes, publishListing, deleteListing, setLike, paymentConfig, payCreate, payComplete, getSubscription, isSubscribed, syncSubscription, startSubscription, manageSubscription, listOrders, listSales, listMyListings, updateListing, setItemStatus, getAccount, saveAccount, likesSince, getProfile, saveProfile, listReviews, addReview, deleteReview };
 })();

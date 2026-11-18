@@ -233,6 +233,8 @@ body.from-market[data-view=studio] .back-market { display: inline-block; }
 .shop-total { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 0 4px; } .shop-total b { font: 600 24px var(--serif); color: var(--gold-2); }
 .shop-actions { justify-content: flex-end; gap: 8px; margin: 14px 0 0; flex-wrap: wrap; }
 .shop-demo { background: var(--panel-2); border-left: 2px solid var(--warn); border-radius: 4px; padding: 10px 14px; font-size: 12px; color: var(--muted); margin-bottom: 14px; } .shop-demo b { color: var(--text); }
+.card.sub { position: relative; max-width: 420px; } .sub-price { margin: -6px 0 12px; color: var(--muted); } .sub-price b { font: 600 32px var(--serif); color: var(--gold-2); }
+.sub-list { margin: 0 0 12px; padding-left: 18px; color: var(--text); font-size: 14px; line-height: 1.6; } .sub-note { font-size: 12px; margin: 12px 0 0; }
 .shop-sec { margin: 14px 0; }
 .shop-pay { display: grid; gap: 12px; margin-top: 10px; } .shop-paybtn { width: 100%; padding: 12px; font-size: 15px; } .shop-secure { font-size: 12px; text-align: center; margin: 0; }
 .shop-done { text-align: center; padding: 6px 0 10px; } .shop-done h3 { padding: 0; margin-bottom: 4px; }

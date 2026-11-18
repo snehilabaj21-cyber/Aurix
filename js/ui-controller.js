@@ -162,7 +162,14 @@
   $('ai-prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runAI(); });
 
   /* ----- header actions ----- */
-  const exportStl = (compensate) => {
+  // STL export needs a signed-in, subscribed account ($20/month): signed out -> sign in, not subscribed -> the subscribe popup
+  const exportStl = async (compensate) => {
+    if (!me) { toast('Sign in to export STL files'); setAuthMode(false); openModal('auth-modal'); return; }
+    if (!AurixCloud.isSubscribed(sub)) await refreshSub(); // they may have just subscribed
+    if (!AurixCloud.isSubscribed(sub)) { $('sub-err').textContent = ''; openModal('sub-modal'); return; }
+    doExport(compensate);
+  };
+  const doExport = (compensate) => {
     const r = studio.exportSTL('aurix-' + SpecSheet.jobNumber(cfg()) + (compensate ? '' : '-true-size') + '.stl', compensate);
     if (!r.triangles) { toast('STL not exported — mesh check failed: ' + r.check.problems.join('; ')); return; }
     toast('Exported STL · ' + r.triangles.toLocaleString() + ' triangles · ' + r.check.shells + ' watertight solids (' + (compensate ? 'shrinkage-compensated' : 'true size') + ', Z-up)');
@@ -238,6 +245,33 @@
     $('btn-designs').hidden = !u;
   });
   $('btn-profile').addEventListener('click', () => AurixMarketplace.show('account'));
+  /* ----- subscription: the row is read from the database; only the server (from Stripe) can change it ----- */
+  let sub = null;
+  const refreshSub = async () => {
+    sub = me ? await AurixCloud.getSubscription(me.id).catch(() => null) : null;
+    $('btn-sub').hidden = !AurixCloud.isSubscribed(sub);
+  };
+  AurixCloud.onAuth(() => refreshSub()); // runs after the listener above has set `me`
+  $('sub-x').addEventListener('click', () => closeModal('sub-modal')); $('sub-later').addEventListener('click', () => closeModal('sub-modal'));
+  $('sub-go').addEventListener('click', async () => {
+    const btn = $('sub-go'), label = btn.textContent; $('sub-err').textContent = ''; btn.disabled = true; btn.textContent = 'Opening secure checkout…';
+    try { location.href = await AurixCloud.startSubscription(); } // Stripe's hosted page; it returns here with ?subscribed=1
+    catch (ex) { $('sub-err').textContent = ex.message || 'Couldn’t start the subscription. Please try again.'; btn.disabled = false; btn.textContent = label; }
+  });
+  $('btn-sub').addEventListener('click', async () => {
+    try { location.href = await AurixCloud.manageSubscription(); } catch (ex) { toast('Couldn’t open billing: ' + ex.message); }
+  });
+  if (new URLSearchParams(location.search).has('subscribed')) { // back from Stripe: ask Stripe (via the server) so access shows at once
+    history.replaceState(null, '', location.pathname + location.hash);
+    (async () => {
+      me = await AurixCloud.user(); if (!me) return;
+      toast('Checking your subscription…', 'info');
+      try { await AurixCloud.syncSubscription(); } catch (ex) { /* the webhook will catch up */ }
+      await refreshSub();
+      if (AurixCloud.isSubscribed(sub)) toast('You’re subscribed! STL export is unlocked.', 'success');
+      else toast('Your payment is still processing. Try exporting again in a minute.', 'info');
+    })();
+  }
   /* forgot / reset password: the reset email comes from Supabase Auth (see the SendGrid SMTP setup) */
   $('auth-forgot').addEventListener('click', () => { closeModal('auth-modal'); $('forgot-err').textContent = ''; $('forgot-ok').textContent = ''; $('forgot-email').value = $('auth-email').value.trim(); openModal('forgot-modal'); $('forgot-email').focus(); });
   $('forgot-x').addEventListener('click', () => closeModal('forgot-modal')); $('forgot-cancel').addEventListener('click', () => closeModal('forgot-modal'));

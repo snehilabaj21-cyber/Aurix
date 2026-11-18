@@ -52,6 +52,39 @@ async function finalize(ref: string, userId?: string): Promise<{ order_id?: stri
   return { order_id: oid };
 }
 
+/* ----- subscription ($20 / month): unlocks STL export ----- */
+const PLAN_KEY = 'aurix_pro_monthly', PLAN_CENTS = 2000; // change PLAN_CENTS (and PLAN_KEY, to make a new price) to change the price
+const SITES = ['https://aurix-seven-vert.vercel.app', 'http://localhost:8080'];
+const LIVE = ['active', 'trialing'];
+
+// the plan's Stripe Price, created on first use and found again by its lookup key afterwards
+async function planPrice(): Promise<string> {
+  const f = await stripe(`/v1/prices?lookup_keys[]=${PLAN_KEY}&active=true`);
+  if (f.ok && f.json.data?.length) return f.json.data[0].id;
+  const c = await stripe('/v1/prices', {
+    currency: 'usd', unit_amount: String(PLAN_CENTS), 'recurring[interval]': 'month', lookup_key: PLAN_KEY, 'product_data[name]': 'Aurix Pro: STL export'
+  }, 'price-' + PLAN_KEY);
+  if (!c.ok) throw new Error('could not create the plan price: ' + JSON.stringify(c.json));
+  return c.json.id;
+}
+
+async function saveSub(userId: string, sub: any) {
+  const end = sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end; // newer API versions keep it on the item
+  const { error } = await admin.from('subscriptions').upsert({
+    user_id: userId, stripe_customer_id: typeof sub.customer === 'string' ? sub.customer : sub.customer?.id, stripe_subscription_id: sub.id,
+    status: sub.status, current_period_end: end ? new Date(end * 1000).toISOString() : null, cancel_at_period_end: !!sub.cancel_at_period_end,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id' });
+  if (error) throw error;
+}
+
+async function userForSub(sub: any): Promise<string | null> {
+  if (sub.metadata?.user_id) return sub.metadata.user_id;
+  const cust = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id;
+  const { data } = await admin.from('subscriptions').select('user_id').eq('stripe_customer_id', cust).maybeSingle();
+  return data?.user_id ?? null;
+}
+
 async function validWebhook(raw: string, header: string): Promise<boolean> {
   if (!WHSEC) return false;
   const parts = Object.fromEntries(header.split(',').map((p) => p.split('=') as [string, string]));
@@ -76,6 +109,12 @@ Deno.serve(async (req) => {
     if (ev.type === 'payment_intent.succeeded') {
       const out = await finalize(ev.data.object.id);
       if (out.error && out.error !== 'Unknown checkout') console.error('webhook finalize', ev.data.object.id, out.error);
+    }
+    if (/^customer\.subscription\.(created|updated|deleted)$/.test(ev.type)) {
+      try {
+        const uid = await userForSub(ev.data.object);
+        if (uid) await saveSub(uid, ev.data.object); else console.error('webhook: subscription with no known user', ev.data.object.id);
+      } catch (e) { console.error('webhook subscription save failed', e); return fail('retry', 500); } // Stripe retries a 500
     }
     return reply({ received: true });
   }
@@ -113,6 +152,45 @@ Deno.serve(async (req) => {
       if (out.error) return fail(out.error, 400);
       if (out.pending) return fail('Your payment is still processing. Check My orders in a moment.', 202);
       return reply({ order_id: out.order_id, method: 'card' });
+    }
+    if (body.action === 'subscribe' || body.action === 'manage') {
+      let origin = ''; try { origin = new URL(String(body.return_url)).origin; } catch { /* checked below */ }
+      if (!SITES.includes(origin)) return fail('Bad return address');
+      const { data: row } = await admin.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle();
+      if (body.action === 'manage') {
+        if (!row?.stripe_customer_id) return fail('No subscription found.');
+        const p = await stripe('/v1/billing_portal/sessions', { customer: row.stripe_customer_id, return_url: origin + '/' });
+        if (!p.ok) { console.error('portal failed', JSON.stringify(p.json)); return fail('Couldn’t open billing. Try again later.', 502); }
+        return reply({ url: p.json.url });
+      }
+      if (row && LIVE.includes(row.status)) return fail('You’re already subscribed.');
+      let customer = row?.stripe_customer_id as string | undefined;
+      if (!customer) {
+        const c = await stripe('/v1/customers', { ...(user.email ? { email: user.email } : {}), 'metadata[user_id]': user.id });
+        if (!c.ok) { console.error('customer create failed', JSON.stringify(c.json)); return fail('Couldn’t start the subscription. Try again.', 502); }
+        customer = c.json.id as string;
+        await admin.from('subscriptions').upsert({ user_id: user.id, stripe_customer_id: customer }, { onConflict: 'user_id' });
+      }
+      const s = await stripe('/v1/checkout/sessions', {
+        mode: 'subscription', customer, client_reference_id: user.id,
+        'line_items[0][price]': await planPrice(), 'line_items[0][quantity]': '1',
+        'subscription_data[metadata][user_id]': user.id,
+        success_url: origin + '/?subscribed=1', cancel_url: origin + '/'
+      });
+      if (!s.ok || !s.json.url) { console.error('subscribe session failed', s.status, JSON.stringify(s.json)); return fail('Couldn’t start the subscription. Try again.', 502); }
+      return reply({ url: s.json.url });
+    }
+    if (body.action === 'sub_sync') {
+      // asks Stripe directly (not the browser) for this customer's subscription, so access appears right after paying
+      const { data: row } = await admin.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle();
+      if (!row?.stripe_customer_id) return reply({ status: 'none' });
+      const l = await stripe(`/v1/subscriptions?customer=${encodeURIComponent(row.stripe_customer_id)}&status=all&limit=10`);
+      if (!l.ok) return fail('Couldn’t check your subscription.', 502);
+      const subs: any[] = l.json.data ?? [];
+      const best = subs.find((x) => LIVE.includes(x.status)) ?? subs[0];
+      if (!best) return reply({ status: 'none' });
+      await saveSub(user.id, best);
+      return reply({ status: best.status });
     }
     return fail('Unknown action');
   } catch (e) {
